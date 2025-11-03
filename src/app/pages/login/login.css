@@ -1,0 +1,10 @@
+/* Classes de texto para usar as cores definidas em styles.css */
+.text-green-primary {
+    color: var(--green-primary) !important; /* Usar !important para garantir a sobrescrita */
+  }
+  
+  .text-green-secondary {
+    color: var(--green-secondary) !important;
+  }
+  
+  /* Você pode adicionar outros estilos específicos do componente aqui, se precisar */

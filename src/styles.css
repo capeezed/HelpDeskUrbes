@@ -1,1 +1,29 @@
-/* You can add global styles to this file, and also import other style files */
+
+/* Variáveis de Cores Personalizadas (Baseado na sua logo) */
+:root {
+  --green-primary: #007B4F; /* Um verde escuro, talvez da tarja ou texto da logo */
+  --green-secondary: #00A651; /* Um verde mais claro, se houver na logo */
+  --green-light: #e6f7ef; /* Um verde bem claro para fundos sutis */
+  --green-hover: #00643c; /* Verde mais escuro para hover de botões */
+  --white: #ffffff;
+  --dark-text: #343a40; /* Texto escuro padrão */
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Fonte um pouco mais moderna */
+  background-color: var(--green-light); /* Fundo suave com o verde claro */
+  color: var(--dark-text);
+}
+
+/* Sobrescrever algumas variáveis do Bootstrap para usar nosso verde */
+/* Isso é útil se você quiser que botões primários, etc., já venham com seu verde */
+/* Se você usa SCSS, pode personalizar as variáveis do Bootstrap antes do import */
+.btn-primary {
+  background-color: var(--green-primary);
+  border-color: var(--green-primary);
+}
+.btn-primary:hover {
+  background-color: var(--green-hover);
+  border-color: var(--green-hover);
+}
+/* etc. para outras classes do Bootstrap que você queira customizar */
