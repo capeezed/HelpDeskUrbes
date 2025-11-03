@@ -6,11 +6,15 @@ import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
 import { Login } from './pages/login/login';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { Cadastro } from './pages/cadastro/cadastro';
+import { Dashboard } from './pages/dashboard/dashboard';
 
 @NgModule({
   declarations: [
     App,
-    Login
+    Login,
+    Cadastro,
+    Dashboard
   ],
   imports: [
     BrowserModule,

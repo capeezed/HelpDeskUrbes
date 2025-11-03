@@ -7,26 +7,29 @@ import {
 } from '@supabase/supabase-js';
 import { BehaviorSubject, Observable } from 'rxjs';
 
+
+export interface CadastroData {
+  email: string;
+  pass: string;
+  nomeCompleto: string;
+  setorId: number;
+  cargoId: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-  // 2. Um BehaviorSubject para guardar o usuário atual.
-  //    Ele "guarda" o último valor e emite para novos assinantes.
-  //    Começa como nulo (ninguém logado).
   private userSubject = new BehaviorSubject<User | null>(null);
 
-  // 3. Um Observable público que os componentes podem "ouvir".
-  //    O $ no final é uma convenção para Observables.
   public user$: Observable<User | null> = this.userSubject.asObservable();
 
   constructor(private supabaseService: SupabaseService) {
-    // 4. A MÁGICA ACONTECE AQUI:
-    //    Ouve as mudanças de autenticação do Supabase (LOGIN, LOGOUT, etc)
+
     this.supabaseService.supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
-        // 5. Atualiza o BehaviorSubject com o novo usuário (ou nulo)
+ 
         this.userSubject.next(session?.user ?? null);
       }
     );
@@ -52,12 +55,44 @@ export class AuthService {
   /**
    * Cria um novo usuário.
    */
-  async cadastrarUsuario(email: string, pass: string) {
-    return this.supabase.auth.signUp({
-      email: email,
-      password: pass,
+  async cadastrarUsuario(dados: CadastroData) {
+    const { data: authData, error: authError } = await this.supabase.auth.signUp({
+      email: dados.email,
+      password: dados.pass,
     });
+
+    if (authError) {
+      console.error('Erro no signUp (auth):', authError);
+      return { data: null, error: authError };
+    }
+
+    if (!authData.user) {
+      const error = new Error('Usuário não foi criado no auth.');
+      console.error(error.message);
+      return { data: null, error };
+    }
+
+    // 2. Inserir os dados extras na tabela (perfis)
+    const { data: profileData, error: profileError } = await this.supabase
+      .from('perfis')
+      .insert({
+        id: authData.user.id,
+        nome_completo: dados.nomeCompleto,
+        setor_id: dados.setorId, // MUDOU AQUI
+        cargo_id: dados.cargoId  // MUDOU AQUI
+    });
+
+    if (profileError) {
+      console.error('Erro ao criar perfil (public.perfis):', profileError);
+      // Aqui, o ideal seria deletar o usuário do auth (rollback)
+      // Mas por enquanto, vamos apenas retornar o erro.
+      return { data: null, error: profileError };
+    }
+
+    // Deu tudo certo!
+    return { data: { authUser: authData.user, profile: profileData }, error: null };
   }
+
 
   /**
    * Faz o logout do usuário.
