@@ -18,14 +18,15 @@ export interface Chamado {
   criado_por_id: number;
   criado_em: string; 
   atribuido_para_id: number | null; 
+  anexo_url?: string; 
 
-  // --- CAMPOS NOVOS DO JOIN ---
+  // --- CAMPOS DO JOIN ---
   solicitante_nome?: string;
   solicitante_setor?: string;
   solicitante_cargo?: string;
-
-  // --- AQUI ESTÁ A CORREÇÃO ---
-  anexo_url?: string; // <-- ADICIONE ESTA LINHA
+  
+  // --- CAMPO NOVO DO SEGUNDO JOIN ---
+  tecnico_atribuido_nome?: string;
 }
 
 // Interface para criar um novo chamado (Simplificada)
@@ -82,9 +83,9 @@ export class ChamadoService {
   /**
    * NOVO: Técnico se atribui a um chamado.
    */
-  atribuirChamado(id: number): Observable<any> {
-    // Rota protegida (apenasTecnicos), Interceptor envia o token
-    return this.http.put(`${this.apiUrl}/chamados/${id}/atribuir`, {});
+  atribuirChamado(chamadoId: number, tecnicoId: number): Observable<any> {
+    // Agora enviamos o ID do técnico no corpo da requisição
+    return this.http.put(`${this.apiUrl}/chamados/${chamadoId}/atribuir`, { tecnicoId });
   }
 
   /**
@@ -94,4 +95,6 @@ export class ChamadoService {
     // Rota protegida (apenasTecnicos), Interceptor envia o token
     return this.http.put(`${this.apiUrl}/chamados/${id}/status`, { novoStatus });
   }
+
+  
 }

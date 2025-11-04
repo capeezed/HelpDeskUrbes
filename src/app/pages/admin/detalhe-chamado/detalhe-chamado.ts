@@ -2,70 +2,119 @@
 
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, switchMap, tap, catchError, of } from 'rxjs';
+import { Observable, switchMap, tap, catchError, of, map } from 'rxjs'; // Importe 'map'
 import { Chamado, ChamadoService } from '../../../services/chamado';
+
+// 1. IMPORTS NECESSÁRIOS
+import { PerfilTecnico, DadosGerais } from '../../../services/dados-gerais'; // Verifique o caminho
+import { AuthService } from '../../../services/auth.service';
+import { CommonModule } from '@angular/common'; 
+import { RouterModule } from '@angular/router'; 
+import { FormsModule } from '@angular/forms'; 
 
 @Component({
   selector: 'app-detalhe-chamado',
-  standalone: false,
+  standalone: true, 
+  imports: [
+    CommonModule,   
+    RouterModule,   
+    FormsModule     
+  ],
   templateUrl: './detalhe-chamado.html',
   styleUrls: ['./detalhe-chamado.css']
 })
 export class DetalheChamado implements OnInit {
 
-  chamado$!: Observable<Chamado | null>; // Permite ser nulo em caso de erro
+  chamado$!: Observable<Chamado | null>;
   
-  isLoading = false; // Loading das ações (botões)
+  // 2. VERIFIQUE SE ESTAS PROPRIEDADES ESTÃO DECLARADAS
+  listaTecnicos$!: Observable<PerfilTecnico[]>;
+  tecnicoSelecionadoId: number | null = null;
+  
+  isLoading = false;
   mensagemErro = '';
   mensagemAcao = '';
 
   constructor(
-    private route: ActivatedRoute, // Para ler o ID da URL
+    private route: ActivatedRoute,
     private router: Router,
-    private chamadoService: ChamadoService
+    private chamadoService: ChamadoService,
+    private dadosGeraisService: DadosGerais, // 3. VERIFIQUE SE O SERVIÇO ESTÁ INJETADO
+    public authService: AuthService 
   ) {}
 
   ngOnInit(): void {
-    // Carrega o chamado ao iniciar
     this.carregarChamado();
+    
+    // 4. ESTA É A CHAMADA IMPORTANTE
+    this.carregarTecnicos();
   }
 
-  /**
-   * Busca o chamado com base no ID da URL
-   */
   carregarChamado(): void {
     this.chamado$ = this.route.paramMap.pipe(
       switchMap(params => {
         const id = params.get('id');
         if (!id) {
-          // Se não houver ID, define o erro e retorna um Observable nulo
           this.mensagemErro = 'ID do chamado não fornecido.';
-          return of(null); // 'of(null)' cria um Observable que emite 'null'
+          return of(null);
         }
-        return this.chamadoService.getChamadoById(+id).pipe( // O '+' converte a string 'id' para number
+        return this.chamadoService.getChamadoById(+id).pipe( 
+          tap(chamado => {
+            if (chamado && chamado.atribuido_para_id) {
+              this.tecnicoSelecionadoId = chamado.atribuido_para_id;
+            } else {
+              this.tecnicoSelecionadoId = null; 
+            }
+          }),
           catchError(err => {
             this.mensagemErro = `Erro ao buscar chamado: ${err.error.message || err.message}`;
-            return of(null); // Retorna nulo em caso de erro
+            return of(null); 
           })
         );
       })
     );
   }
 
+  // 5. FUNÇÃO PARA CARREGAR TÉCNICOS (COM FILTRO)
+  carregarTecnicos(): void {
+    const idUsuarioAtual = this.authService.usuarioAtual?.id;
+
+    this.listaTecnicos$ = this.dadosGeraisService.getTecnicos().pipe(
+      map(tecnicos => 
+        // Filtra a lista para remover o utilizador que já está logado
+        // (Para que "Rafael" não apareça 2x se ele for o 'suporte.ti')
+        tecnicos.filter(t => t.id !== idUsuarioAtual)
+      ),
+      catchError(err => {
+        // Se a chamada falhar, pelo menos o dropdown não fica vazio
+        console.error("Erro ao carregar lista de técnicos", err);
+        this.mensagemErro = "Não foi possível carregar a lista de técnicos.";
+        return of([]); // Retorna um array vazio em caso de erro
+      })
+    );
+  }
+
+
   // --- AÇÕES DO TÉCNICO ---
 
-  atribuirAMim(id: number) {
+  atribuirChamado(id: number) {
+    if (!this.tecnicoSelecionadoId) {
+      alert('Por favor, selecione um técnico no dropdown.');
+      return;
+    }
+    
     this.isLoading = true;
     this.mensagemAcao = '';
-    this.chamadoService.atribuirChamado(id).subscribe({
+    
+    this.chamadoService.atribuirChamado(id, this.tecnicoSelecionadoId).subscribe({
       next: () => {
         this.isLoading = false;
         this.mensagemAcao = 'Chamado atribuído com sucesso!';
-        this.carregarChamado(); // Recarrega os dados para mostrar a mudança
+        this.carregarChamado(); 
       },
       error: (err) => {
         this.isLoading = false;
-        alert('Erro: ' + err.error.message); // Mostra um alerta simples
+        alert('Erro: ' + err.error.message);
       }
     });
   }
@@ -77,7 +126,7 @@ export class DetalheChamado implements OnInit {
       next: () => {
         this.isLoading = false;
         this.mensagemAcao = `Status alterado para ${novoStatus}!`;
-        this.carregarChamado(); // Recarrega os dados
+        this.carregarChamado(); 
       },
       error: (err) => {
         this.isLoading = false;
@@ -86,7 +135,6 @@ export class DetalheChamado implements OnInit {
     });
   }
 
-  // Função de estilo (copiada da Fila)
   getStatusClass(status: string | undefined) {
     switch (status) {
       case 'aberto': return 'bg-success text-white';

@@ -24,16 +24,17 @@ import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
     Dashboard,
     Secure,
     Header,
-    NovoChamado,
     FilaChamados,
-    DetalheChamado
+    
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     FormsModule,
     NgbModule,
-    HttpClientModule
+    HttpClientModule,
+    NovoChamado,
+    DetalheChamado
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),

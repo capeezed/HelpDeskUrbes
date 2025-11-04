@@ -1,20 +1,34 @@
+// src/app/pages/novo-chamado/novo-chamado.component.ts
+
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { ChamadoService, NovoChamado as NovoChamadoData } from '../../services/chamado';
 
+// --- CORRECÇÃO ESTÁ AQUI ---
+import { CommonModule } from '@angular/common';   // Para *ngIf, *ngFor, [ngClass]
+import { FormsModule } from '@angular/forms';     // Para [(ngModel)]
+
 @Component({
   selector: 'app-novo-chamado',
-  standalone: false,
+  // 1. Marque como standalone
+  standalone: true,
+  // 2. Importe os módulos
+  imports: [
+    CommonModule, // <-- Corrige *ngIf
+    FormsModule   // <-- Corrige [(ngModel)]
+  ],
   templateUrl: './novo-chamado.html',
   styleUrls: ['./novo-chamado.css']
 })
 export class NovoChamado {
 
-  // Variáveis do Formulário (muito mais simples)
+  // Variáveis do Formulário (simplificadas)
   titulo = '';
   descricao = '';
-  // Categoria e Prioridade removidos
+  
+  // Para o upload de ficheiro
   arquivoSelecionado: File | null = null;
+
   // Estado da Página
   isLoading = false;
   mensagemErro = '';
@@ -23,11 +37,9 @@ export class NovoChamado {
   constructor(
     private chamadoService: ChamadoService,
     private router: Router
-    // Não precisamos mais do DadosGerais!
   ) { }
 
-  // Não precisamos de ngOnInit ou carregarCategorias!
-
+  // Função para capturar o ficheiro selecionado
   onFileSelected(event: any): void {
     if (event.target.files && event.target.files.length > 0) {
       this.arquivoSelecionado = event.target.files[0];
@@ -36,7 +48,8 @@ export class NovoChamado {
     }
   }
 
-async handleNovoChamado() {
+  // Função de submit
+  async handleNovoChamado() {
     this.mensagemErro = '';
     this.mensagemSucesso = '';
     
@@ -47,20 +60,16 @@ async handleNovoChamado() {
 
     this.isLoading = true;
 
-    // --- MUDANÇA PRINCIPAL: Construir FormData ---
+    // Construir o FormData
     const formData = new FormData();
     formData.append('titulo', this.titulo);
     formData.append('descricao', this.descricao);
     
-    // Anexa o ficheiro SÓ SE ele foi selecionado
     if (this.arquivoSelecionado) {
-      // O nome 'anexo' DEVE ser o mesmo que o backend espera
-      // no 'upload.single('anexo')'
       formData.append('anexo', this.arquivoSelecionado, this.arquivoSelecionado.name);
     }
-    // ------------------------------------------
 
-    // Chama o serviço atualizado com o FormData
+    // Chamar o serviço
     this.chamadoService.criarChamado(formData).subscribe({
       next: (response) => {
         this.isLoading = false;
@@ -69,7 +78,7 @@ async handleNovoChamado() {
         this.titulo = '';
         this.descricao = '';
         this.arquivoSelecionado = null;
-        // (idealmente, você também resetaria o input type="file" no HTML)
+        // TODO: Limpar o input de ficheiro (é um pouco mais chato)
 
         setTimeout(() => {
           this.router.navigate(['/dashboard']);

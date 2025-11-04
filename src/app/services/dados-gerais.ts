@@ -18,6 +18,11 @@ export interface Categoria {
   nome: string;
 }
 
+export interface PerfilTecnico {
+  id: number;
+  nome_completo: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -36,5 +41,10 @@ export class DadosGerais {
 
   getCategorias(): Observable<Categoria[]> {
     return this.http.get<Categoria[]>(`${this.apiUrl}/categorias`);
+  }
+
+  getTecnicos(): Observable<PerfilTecnico[]> {
+    // Esta rota é protegida e o Interceptor envia o token
+    return this.http.get<PerfilTecnico[]>(`${this.apiUrl}/api/tecnicos`);
   }
 }

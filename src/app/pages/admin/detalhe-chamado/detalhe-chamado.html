@@ -54,26 +54,56 @@
     </div>
 
     <!-- Coluna Lateral: Ações do Técnico -->
-    <div class="col-lg-4 mt-4 mt-lg-0">
-      <div class="card shadow-sm">
-        <div class="card-header">
-          <h5 class="mb-0">Ações do Técnico</h5>
-        </div>
-        <div class="card-body">
-          <!-- Informações de Atribuição -->
-          <div classs="mb-3">
-            <strong>Atribuído para:</strong>
-            <p *ngIf="!chamado.atribuido_para_id" class="text-danger">Ninguém (Aguardando)</p>
-            <p *ngIf="chamado.atribuido_para_id" class="text-success">Técnico ID: {{ chamado.atribuido_para_id }}</p>
-          </div>
+   <div class="col-lg-4 mt-4 mt-lg-0">
+  <div class="card shadow-sm">
+    <div class="card-header">
+      <h5 class="mb-0">Ações do Técnico</h5>
+    </div>
+    <div class="card-body">
 
-          <!-- Botão "Atribuir a mim" (só aparece se estiver 'aberto') -->
-          <div class="d-grid gap-2" *ngIf="chamado.status === 'aberto'">
-            <button class="btn btn-success" (click)="atribuirAMim(chamado.id)" [disabled]="isLoading">
-              <span *ngIf="!isLoading">Atribuir a mim</span>
-              <span *ngIf="isLoading" class="spinner-border spinner-border-sm"></span>
-            </button>
-          </div>
+      <!-- Informações de Atribuição (AGORA MOSTRA O NOME) -->
+      <div class="mb-3">
+        <strong>Atribuído para:</strong>
+        <p *ngIf="!chamado.atribuido_para_id" class="text-danger">Ninguém (Aguardando)</p>
+        <!-- Mostra o nome do técnico que o backend enviou -->
+        <p *ngIf="chamado.atribuido_para_id" class="text-success">
+          {{ chamado.tecnico_atribuido_nome || 'Técnico ID: ' + chamado.atribuido_para_id }}
+        </p>
+      </div>
+
+      <!--
+        FEATURE NOVA: Dropdown de Atribuição
+        (Substitui o botão "Atribuir a mim")
+      -->
+      <div class="mb-3" *ngIf="chamado.status === 'aberto'">
+        <label for="tecnicoSelect" class="form-label">Atribuir para:</label>
+        <select class="form-select" id="tecnicoSelect" [(ngModel)]="tecnicoSelecionadoId">
+          <option [ngValue]="null" disabled>Selecione um técnico...</option>
+          <!-- 
+            O (authService.usuarioAtual.id) permite selecionar "Eu mesmo"
+            que é o Gabriel, Lucas ou Rafael que está logado
+          -->
+          <option [ngValue]="authService.usuarioAtual?.id">
+            (Atribuir a mim)
+          </option>
+          
+          <!-- Carrega a lista de TODOS os técnicos -->
+          <option *ngFor="let tecnico of listaTecnicos$ | async" [ngValue]="tecnico.id">
+            {{ tecnico.nome_completo }}
+          </option>
+        </select>
+      </div>
+      
+      <!-- Botão "Atribuir" (só aparece se estiver 'aberto') -->
+      <div class="d-grid gap-2" *ngIf="chamado.status === 'aberto'">
+        <button 
+          class="btn btn-success" 
+          (click)="atribuirChamado(chamado.id)" 
+          [disabled]="isLoading || !tecnicoSelecionadoId">
+          <span *ngIf="!isLoading">Atribuir</span>
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm"></span>
+        </button>
+      </div>
 
           <!-- Ações de Status (só aparecem DEPOIS de atribuído) -->
           <div class="d-grid gap-2 mt-3" *ngIf="chamado.status !== 'aberto' && chamado.status !== 'fechado'">
