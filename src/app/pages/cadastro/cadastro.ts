@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+// 1. Importa a interface CadastroData do AuthService
 import { AuthService, CadastroData } from '../../services/auth.service';
-// 1. O nome do seu serviço (DadosGerais) e o nome do arquivo (dados-gerais)
-//    estão um pouco diferentes do padrão (DadosGeraisService / dados-gerais.service),
-//    mas estou mantendo como você importou!
+// 2. Importa os serviços e interfaces de DadosGerais
 import { DadosGerais, Setor, Cargo } from '../../services/dados-gerais';
 
 @Component({
@@ -32,48 +31,60 @@ export class Cadastro implements OnInit {
   // Mensagens e Estado de Carregamento
   mensagemErro = '';
   mensagemSucesso = '';
-  isLoadingDados = true;  // Loading dos dropdowns
-  isLoading = false;      // <-- ADICIONADO: Loading do botão de submit
+  isLoadingDados = true;   // Loading dos dropdowns
+  isLoading = false;       // <-- ADICIONADO: Loading do botão de submit
 
   constructor(
     private authService: AuthService,
     private router: Router,
-    private DadosGerais: DadosGerais // Injetando seu serviço
+    private DadosGerais: DadosGerais // Nome do seu serviço
   ) { }
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     this.carregarDadosDropdowns();
   }
 
   /**
-   * Busca setores e cargos do Supabase
+   * 3. REFATORADO COM .subscribe()
+   * Busca setores e, DEPOIS, busca os cargos.
    */
-  async carregarDadosDropdowns() {
+  carregarDadosDropdowns() {
     this.isLoadingDados = true;
-    try {
-      const [setores, cargos] = await Promise.all([
-        this.DadosGerais.getSetores(),
-        this.DadosGerais.getCargos()
-      ]);
-      
-      this.listaDeSetores = setores;
-      this.listaDeCargosCompleta = cargos;
+    this.mensagemErro = ''; // Limpa erros antigos
 
-    } catch (error) {
-      this.mensagemErro = 'Erro ao carregar dados de Setor/Cargo.';
-      console.error(error);
-    } finally {
-      this.isLoadingDados = false;
-    }
+    this.DadosGerais.getSetores().subscribe({
+      next: (setores) => {
+        this.listaDeSetores = setores;
+        
+        // Agora busca os cargos
+        this.DadosGerais.getCargos().subscribe({
+          next: (cargos) => {
+            this.listaDeCargosCompleta = cargos;
+            this.isLoadingDados = false; // <-- Termina o loading SÓ AQUI
+          },
+          error: (err) => this.handleApiError(err, 'cargos')
+        });
+      },
+      error: (err) => this.handleApiError(err, 'setores')
+    });
+  }
+
+  // Helper para tratar erros do carregamento de dados
+  private handleApiError(err: any, context: string) {
+    this.isLoadingDados = false;
+    this.isLoading = false;
+    this.mensagemErro = `Erro ao carregar ${context}: ${err.message}`;
+    console.error(err);
   }
 
   /**
-   * Filtra os cargos quando o setor muda
+   * 4. Função onSetorChange (Corrigida com `==` para comparar string/number)
    */
   onSetorChange(): void {
     this.cargoSelecionadoId = null; 
     
     if (this.setorSelecionadoId) {
+      // Usamos '==' para o caso do ngModel retornar 'string'
       this.listaDeCargosFiltrada = this.listaDeCargosCompleta.filter(
         cargo => cargo.setor_id == this.setorSelecionadoId
       );
@@ -84,68 +95,60 @@ export class Cadastro implements OnInit {
 
 
   /**
-   * Função de Cadastro (handleCadastro) COMPLETA
+   * 5. REFATORADO COM .subscribe() e isLoading
    */
   async handleCadastro() {
     this.mensagemErro = '';
     this.mensagemSucesso = '';
-    this.isLoading = true; // <-- LIGA O "CARREGANDO"
+    this.isLoading = true; // <-- LIGA o loading do botão
 
     // --- Validações ---
     if (this.password !== this.confirmPassword) {
       this.mensagemErro = 'As senhas não coincidem.';
-      this.isLoading = false; // <-- DESLIGA (erro)
+      this.isLoading = false;
       return;
     }
     if (this.password.length < 6) {
       this.mensagemErro = 'A senha deve ter pelo menos 6 caracteres.';
-      this.isLoading = false; // <-- DESLIGA (erro)
+      this.isLoading = false;
       return;
     }
     if (!this.setorSelecionadoId || !this.cargoSelecionadoId) {
       this.mensagemErro = 'Por favor, selecione seu Setor e Cargo.';
-      this.isLoading = false; // <-- DESLIGA (erro)
+      this.isLoading = false; 
       return;
     }
     // --- Fim Validações ---
+    
+    // Os dados para enviar (a interface está no AuthService)
+    const dados: CadastroData = {
+      email: this.email,
+      pass: this.password,
+      nomeCompleto: this.nomeCompleto,
+      setorId: this.setorSelecionadoId,
+      cargoId: this.cargoSelecionadoId
+    };
 
-    try {
-      // Cria o objeto de dados para enviar
-      const dadosCadastro: CadastroData = {
-        email: this.email,
-        pass: this.password,
-        nomeCompleto: this.nomeCompleto,
-        setorId: this.setorSelecionadoId,
-        cargoId: this.cargoSelecionadoId
-      };
-      
-      const { data, error } = await this.authService.cadastrarUsuario(dadosCadastro);
-
-      if (error) {
-        // Erro vindo do Supabase
-        console.error('Erro no cadastro:', error);
-        this.mensagemErro = error.message;
-      } else {
-        // Sucesso!
-        console.log('Usuário cadastrado:', data);
+    // Usamos .subscribe() para "ouvir" a resposta do HttpClient
+    this.authService.cadastrarUsuario(dados).subscribe({
+      // Callback de Sucesso
+      next: (response) => {
+        this.isLoading = false;
         this.mensagemSucesso = 'Conta criada com sucesso! Redirecionando para o login...';
         
-        // Redireciona para o login após 3 segundos
+        // Redireciona após 3 segundos
         setTimeout(() => {
           this.router.navigate(['/login']);
         }, 3000);
+      },
+      // Callback de Erro
+      error: (err) => {
+        this.isLoading = false;
+        // Pega a mensagem de erro do backend (ex: "Email já existe")
+        this.mensagemErro = err.error?.message || err.message || 'Erro desconhecido ao cadastrar.';
+        console.error(err);
       }
-
-    } catch (err: any) {
-      // Erro inesperado na lógica
-      console.error('Erro inesperado no handleCadastro:', err);
-      this.mensagemErro = 'Ocorreu um erro inesperado: ' + (err.message || err);
-    } finally {
-      // 'finally' é executado sempre, dando certo ou errado
-      if (!this.mensagemSucesso) {
-        // Só desliga o loading se não for sucesso (pois no sucesso, vamos redirecionar)
-        this.isLoading = false; // <-- DESLIGA (erro/fim)
-      }
-    }
+    });
   }
 }
+

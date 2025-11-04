@@ -1,92 +1,70 @@
 import { Injectable } from '@angular/core';
-import { SupabaseService } from './supabase'; // Importa nosso cliente Supabase
-import { AuthService } from './auth.service';      // Importa o Auth para saber o usuário logado
+import { HttpClient } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service'; // Para saber o ID do usuário
 
-// Definindo uma interface para o nosso Chamado (boa prática)
+// Interface (verifique se bate com seu banco)
 export interface Chamado {
-  id?: number;
+  id: number;
   titulo: string;
   descricao: string;
-  status: 'aberto' | 'em_andamento' | 'pendente' | 'resolvido' | 'fechado';
+  status: 'aberto' | 'em_andamento' | 'fechado' | 'resolvido' | 'pendente';
   prioridade: 'baixa' | 'media' | 'alta' | 'urgente';
-  criado_por?: string; // ID do usuário
-  categoria_id: number; // ID da Categoria (Hardware/Software)
+  criado_por_id: number;
+  categoria_id: number;
+}
+
+// Interface para criar um novo chamado
+export interface NovoChamado {
+  titulo: string;
+  descricao: string;
+  prioridade: 'baixa' | 'media' | 'alta' | 'urgente';
+  categoria_id: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class ChamadoService {
+  private apiUrl = `${environment.apiUrl}/api`;
 
-  // Pede o SupabaseService e o AuthService (para saber QUEM está logado)
-  constructor(
-    private supabaseService: SupabaseService,
-    private authService: AuthService
-  ) { }
-
-  // Helper para facilitar o acesso
-  private get supabase() {
-    return this.supabaseService.supabase;
-  }
+  constructor(private http: HttpClient, private authService: AuthService) { }
 
   /**
-   * Busca todos os chamados
+   * Busca chamados.
+   * ATENÇÃO: O backend que fizemos busca TODOS. 
+   * Vamos filtrar no frontend por enquanto.
    */
-  async getTodosChamados() {
-    const { data, error } = await this.supabase
-      .from('chamados') // Nome da tabela no Supabase
-      .select('*')
-      .order('criado_em', { ascending: false }); // Mais novos primeiro
-
-    if (error) {
-      console.error('Erro ao buscar chamados:', error.message);
-      return [];
+  getMeusChamados(): Observable<Chamado[]> {
+    const userId = this.authService.usuarioAtual?.id;
+    if (!userId) {
+      return of([]); // Retorna um Observable vazio se não tiver usuário
     }
-    return data;
-  }
 
-  /**
-   * Busca apenas os chamados do usuário logado
-   */
-  async getMeusChamados(): Promise<Chamado[]> {
-    const usuario = this.authService.usuarioAtual;
-    if (!usuario) return []; // Se não tem usuário, retorna array vazio
-
-    const { data, error } = await this.supabase
-      .from('chamados')
-      .select('*')
-      .eq('criado_por', usuario.id) // Filtra por 'criado_por' == ID do usuário
-      .order('criado_em', { ascending: false });
-
-    if (error) {
-      console.error('Erro ao buscar meus chamados:', error.message);
-      return [];
-    }
-    return data;
+    return this.http.get<Chamado[]>(`${this.apiUrl}/chamados`).pipe(
+      map(todosOsChamados => 
+        todosOsChamados.filter(c => c.criado_por_id === userId)
+      )
+    );
   }
 
   /**
    * Cria um novo chamado
    */
-  async criarChamado(novoChamado: Omit<Chamado, 'id' | 'criado_por' | 'status'>) {
-    const usuario = this.authService.usuarioAtual;
-    if (!usuario) throw new Error('Usuário não autenticado.');
-
-    const { data, error } = await this.supabase
-      .from('chamados')
-      .insert({
-        // ...novoChamado (passa titulo, descricao, prioridade, categoria_id)
-        ...novoChamado,
-        criado_por: usuario.id, // Associa o chamado ao usuário logado
-        status: 'aberto' // O status inicial é sempre 'aberto'
-      })
-      .select(); // Retorna o registro que acabou de ser criado
-
-    if (error) {
-      console.error('Erro ao criar chamado:', error.message);
-      throw error;
+  criarChamado(novoChamado: NovoChamado): Observable<any> {
+    const userId = this.authService.usuarioAtual?.id;
+    if (!userId) {
+      throw new Error('Usuário não autenticado para criar chamado.');
     }
+    
+    // Adiciona o ID do usuário ao payload
+    const payload = {
+      ...novoChamado,
+      criado_por_id: userId
+    };
 
-    return data;
+    return this.http.post(`${this.apiUrl}/chamado`, payload);
   }
 }

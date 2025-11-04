@@ -1,52 +1,52 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router'; // 1. Importe o Router
-import { AuthService } from '../../services/auth.service'; // 2. Importe o AuthService
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service'; // O novo AuthService
 
 @Component({
   selector: 'app-login',
   standalone: false,
   templateUrl: './login.html',
-  styleUrls: ['./login.css'] // Você pode adicionar CSS aqui
+  styleUrls: ['./login.css']
 })
 export class Login {
 
-  // 3. Variáveis para guardar os dados do formulário
+  // Variáveis para o formulário
   email = '';
   password = '';
   mensagemErro = '';
+  
+  // 1. ADICIONAMOS A VARIÁVEL 'isLoading'
+  isLoading = false; 
 
-  // 4. Injete o AuthService e o Router no construtor
   constructor(
     private authService: AuthService,
     private router: Router
   ) { }
 
   /**
-   * Função chamada pelo formulário (ngSubmit)
+   * 2. Função de login REFATORADA para .subscribe()
    */
-  async handleLogin() {
-    try {
-      this.mensagemErro = ''; // Limpa erros antigos
+  handleLogin() { // Não é mais 'async'
+    this.mensagemErro = '';
+    this.isLoading = true; // 3. LIGA o "carregando"
 
-      // 5. Chama o serviço de autenticação
-      const { data, error } = await this.authService.loginComEmail(
-        this.email,
-        this.password
-      );
-
-      if (error) {
-        // 6. Se deu erro, mostra a mensagem
-        console.error('Erro no login:', error);
-        this.mensagemErro = 'Email ou senha inválidos.'; // Mensagem amigável
-      } else {
-        // 7. Se deu certo, redireciona para o Dashboard
-        console.log('Login com sucesso:', data);
-        this.router.navigate(['/dashboard']); // <-- Mude para sua rota principal
-      }
+    this.authService.loginComEmail(this.email, this.password).subscribe({
       
-    } catch (error) {
-      console.error('Erro inesperado:', error);
-      this.mensagemErro = 'Ocorreu um erro inesperado. Tente novamente.';
-    }
+      // Callback de Sucesso
+      next: (response) => {
+        this.isLoading = false; // 4. DESLIGA o "carregando"
+        // O AuthService já salvou o token e atualizou o user$
+        // Apenas redirecionamos para o dashboard
+        this.router.navigate(['/dashboard']);
+      },
+      
+      // Callback de Erro
+      error: (err) => {
+        this.isLoading = false; // 5. DESLIGA o "carregando"
+        // O backend (server.js) envia a mensagem de erro
+        this.mensagemErro = err.error?.message || 'Email ou senha inválidos.';
+        console.error(err);
+      }
+    });
   }
 }

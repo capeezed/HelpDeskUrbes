@@ -1,52 +1,68 @@
-<div class="container d-flex justify-content-center align-items-center vh-100">
-    <div class="card p-4 shadow-lg" style="max-width: 400px; width: 100%;">
-      <div class="card-body">
-        <div class="text-center mb-4">
-          <img src="assets/logo-urbes.png" alt="Logo URBES" class="img-fluid mb-3" style="max-height: 80px;">
-          <h2 class="card-title text-center text-green-primary">Suporte TI</h2>
-          <p class="card-subtitle text-muted text-center">Acesse sua conta para abrir chamados</p>
+<div class="container d-flex justify-content-center min-vh-100 py-5">
+  <div class="card p-4 shadow-lg" style="max-width: 400px; width: 100%;">
+    <div class="card-body">
+      <div class="text-center mb-4">
+        
+        <img src="assets/logo-urbes.png" alt="Logo URBES" class="img-fluid mb-3" style="max-height: 80px;">
+        <h2 class="card-title text-center text-green-primary">TI DESK</h2>
+        <p class="card-subtitle text-muted">Acesse sua conta para abrir chamados</p>
+      </div>
+      
+      <form (ngSubmit)="handleLogin()">
+        
+        <div class="mb-3">
+          <label for="email" class="form-label">Email:</label>
+          <input 
+            id="email"
+            type="email" 
+            class="form-control"
+            placeholder="seu.email@empresa.com"
+            [(ngModel)]="email"
+            name="email"
+            required
+          >
         </div>
         
-        <form (ngSubmit)="handleLogin()">
-          
-          <div class="mb-3">
-            <label for="email" class="form-label">Email:</label>
-            <input 
-              id="email"
-              type="email" 
-              class="form-control"
-              placeholder="seu.email@urbes.com.br"
-              [(ngModel)]="email"
-              name="email"
-              required
-            >
-          </div>
-          
-          <div class="mb-3">
-            <label for="password" class="form-label">Senha:</label>
-            <input 
-              id="password"
-              type="password"
-              class="form-control"
-              placeholder="Sua senha"
-              [(ngModel)]="password"
-              name="password"
-              required
-            >
-          </div>
-  
-          <button type="submit" class="btn btn-primary w-100 mb-3">Entrar</button>
-  
-          <p *ngIf="mensagemErro" class="alert alert-danger text-center">
-            {{ mensagemErro }}
-          </p>
-        </form>
-  
-        <div class="text-center mt-3">
-          <p class="mb-0">
-            Não tem uma conta? <a routerLink="/cadastro" class="text-green-primary">Cadastre-se aqui</a>
-          </p>
+        <div class="mb-3">
+          <label for="password" class="form-label">Senha:</label>
+          <input 
+            id="password"
+            type="password"
+            class="form-control"
+            placeholder="Sua senha"
+            [(ngModel)]="password"
+            name="password"
+            required
+          >
         </div>
+
+        <!-- 
+          BOTÃO ATUALIZADO com [disabled] e *ngIf para o spinner
+        -->
+        <button type="submit" class="btn btn-primary w-100 mb-3" [disabled]="isLoading">
+          
+          <!-- Se NÃO estiver carregando, mostra o texto -->
+          <span *ngIf="!isLoading">Entrar</span>
+        
+          <!-- Se ESTIVER carregando, mostra o spinner -->
+          <span *ngIf="isLoading">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Carregando...
+          </span>
+          
+        </button>
+
+        <!-- Mensagem de Erro -->
+        <p *ngIf="mensagemErro" class="alert alert-danger text-center">
+          {{ mensagemErro }}
+        </p>
+      </form>
+
+      <div class="text-center mt-3">
+        <p class="mb-0">
+          Não tem uma conta? <a routerLink="/cadastro" class="text-green-primary">Cadastre-se aqui</a>
+        </p>
       </div>
     </div>
   </div>
+</div>

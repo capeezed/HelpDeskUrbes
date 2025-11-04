@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChamadoService } from '../../services/chamado';
+// 1. MUDANÇA AQUI: Importamos 'NovoChamado' como 'NovoChamadoData' para evitar conflito
+import { ChamadoService, NovoChamado as NovoChamadoData } from '../../services/chamado';
 import { DadosGerais, Categoria } from '../../services/dados-gerais';
 
 @Component({
@@ -9,6 +10,7 @@ import { DadosGerais, Categoria } from '../../services/dados-gerais';
   templateUrl: './novo-chamado.html',
   styleUrls: ['./novo-chamado.css']
 })
+// O nome da sua classe é 'NovoChamado'
 export class NovoChamado implements OnInit {
 
   // Variáveis do Formulário
@@ -35,15 +37,19 @@ export class NovoChamado implements OnInit {
     this.carregarCategorias();
   }
 
-  async carregarCategorias() {
+  carregarCategorias() {
     this.isLoadingDados = true;
-    try {
-      this.listaDeCategorias = await this.dadosGeraisService.getCategorias();
-    } catch (error) {
-      this.mensagemErro = 'Falha ao carregar categorias.';
-    } finally {
-      this.isLoadingDados = false;
-    }
+    this.dadosGeraisService.getCategorias().subscribe({
+      next: (categorias) => {
+        this.listaDeCategorias = categorias;
+        this.isLoadingDados = false;
+      },
+      error: (err) => {
+        this.isLoadingDados = false;
+        this.mensagemErro = 'Falha ao carregar categorias.';
+        console.error(err);
+      }
+    });
   }
 
   async handleNovoChamado() {
@@ -58,33 +64,37 @@ export class NovoChamado implements OnInit {
 
     this.isLoading = true;
 
-    try {
-      // Chama o serviço para criar o chamado
-      await this.chamadoService.criarChamado({
-        titulo: this.titulo,
-        descricao: this.descricao,
-        categoria_id: this.categoriaId,
-        prioridade: this.prioridade
-      });
+    // 2. MUDANÇA AQUI: Usamos o apelido 'NovoChamadoData'
+    const novoChamado: NovoChamadoData = {
+      titulo: this.titulo,
+      descricao: this.descricao,
+      categoria_id: this.categoriaId,
+      prioridade: this.prioridade
+    };
 
-      // Sucesso!
-      this.mensagemSucesso = 'Chamado aberto com sucesso! Redirecionando...';
-      
-      // Limpa o formulário (opcional)
-      this.titulo = '';
-      this.categoriaId = null;
-      this.prioridade = 'baixa';
-      this.descricao = '';
+    this.chamadoService.criarChamado(novoChamado).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.mensagemSucesso = 'Chamado aberto com sucesso! Redirecionando...';
+        
+        // Limpa o formulário (opcional)
+        this.titulo = '';
+        this.categoriaId = null;
+        this.prioridade = 'baixa';
+        this.descricao = '';
 
-      // Redireciona de volta para o Dashboard após 2 segundos
-      setTimeout(() => {
-        this.router.navigate(['/dashboard']);
-      }, 2000);
+        // Redireciona de volta para o Dashboard após 2 segundos
+        setTimeout(() => {
+          this.router.navigate(['/dashboard']);
+        }, 2000);
 
-    } catch (error: any) {
-      this.mensagemErro = 'Erro ao abrir chamado: ' + error.message;
-    } finally {
-      this.isLoading = false;
-    }
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.mensagemErro = err.error?.message || 'Erro ao abrir chamado.';
+        console.error(err);
+      }
+    });
   }
 }
+

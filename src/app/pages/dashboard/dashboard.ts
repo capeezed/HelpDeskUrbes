@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
-// 1. Importe o Serviço e a Interface que já criamos
+// 1. Caminho do serviço corrigido
 import { Chamado, ChamadoService } from '../../services/chamado';
 
 @Component({
@@ -11,17 +11,15 @@ import { Chamado, ChamadoService } from '../../services/chamado';
 })
 export class Dashboard implements OnInit {
 
-  // 2. Criamos um Observable para a lista de chamados
-  //    O '!' diz ao TypeScript que vamos inicializá-la no ngOnInit
-  chamados$!: Promise<Chamado[]>;
+  // 2. Tipo corrigido de Promise para Observable
+  chamados$!: Observable<Chamado[]>;
 
-  // 3. Injete o ChamadoService
-  constructor(private ChamadoService: ChamadoService) { }
+  // 3. Nome da variável no construtor corrigido (convenção)
+  constructor(private chamadoService: ChamadoService) { }
 
   ngOnInit(): void {
-    // 4. Ao iniciar o componente, buscamos os chamados do usuário
-    //    O service já sabe quem é o usuário logado (via AuthService)
-    this.chamados$ = this.ChamadoService.getMeusChamados();
+    // Esta linha agora funciona, pois os tipos (Observable) batem
+    this.chamados$ = this.chamadoService.getMeusChamados();
   }
 
   // 5. Função para retornar classes CSS do Bootstrap baseadas no status
