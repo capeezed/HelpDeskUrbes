@@ -8,13 +8,19 @@ import { Login } from './pages/login/login';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Cadastro } from './pages/cadastro/cadastro';
 import { Dashboard } from './pages/dashboard/dashboard';
+import { Secure } from './layout/secure/secure';
+import { Header } from './components/header/header';
+import { NovoChamado } from './pages/novo-chamado/novo-chamado';
 
 @NgModule({
   declarations: [
     App,
     Login,
     Cadastro,
-    Dashboard
+    Dashboard,
+    Secure,
+    Header,
+    NovoChamado
   ],
   imports: [
     BrowserModule,

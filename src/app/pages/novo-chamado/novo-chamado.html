@@ -1,0 +1,82 @@
+<div class="container mt-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-body p-4 p-md-5">
+            
+            <h2 class="text-green-primary mb-4">Abrir Novo Chamado</h2>
+  
+            <form (ngSubmit)="handleNovoChamado()">
+              
+              <!-- Título -->
+              <div class="mb-3">
+                <label for="titulo" class="form-label">Título</label>
+                <input type="text" class="form-control" id="titulo" name="titulo"
+                       placeholder="Ex: Monitor não liga"
+                       [(ngModel)]="titulo" required>
+              </div>
+  
+              <div class="row">
+                <!-- Categoria -->
+                <div class="col-md-6 mb-3">
+                  <label for="categoria" class="form-label">Categoria</label>
+                  <select class="form-select" id="categoria" name="categoria"
+                          [(ngModel)]="categoriaId" required>
+                    <option [ngValue]="null" disabled>
+                      {{ isLoadingDados ? 'Carregando...' : 'Selecione a categoria' }}
+                    </option>
+                    <!-- As categorias (Hardware/Software) serão carregadas aqui -->
+                    <option *ngFor="let cat of listaDeCategorias" [ngValue]="cat.id">
+                      {{ cat.nome }}
+                    </option>
+                  </select>
+                </div>
+  
+                <!-- Grau de Urgência (Prioridade) -->
+                <div class="col-md-6 mb-3">
+                  <label for="prioridade" class="form-label">Grau de Urgência</label>
+                  <select class="form-select" id="prioridade" name="prioridade"
+                          [(ngModel)]="prioridade" required>
+                    <option value="baixa">Baixa</option>
+                    <option value="media">Média</option>
+                    <option value="alta">Alta</option>
+                    <option value="urgente">Urgente</option>
+                  </select>
+                </div>
+              </div>
+  
+              <!-- Descrição -->
+              <div class="mb-3">
+                <label for="descricao" class="form-label">Descrição do Problema</label>
+                <textarea class="form-control" id="descricao" name="descricao" rows="5"
+                          placeholder="Descreva o problema em detalhes. O que você tentou fazer? Qual a mensagem de erro?"
+                          [(ngModel)]="descricao" required></textarea>
+              </div>
+  
+              <!-- Botão de Submit -->
+              <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary px-4" [disabled]="isLoading">
+                  <span *ngIf="!isLoading">Abrir Chamado</span>
+                  <span *ngIf="isLoading">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Salvando...
+                  </span>
+                </button>
+              </div>
+  
+              <!-- Mensagens -->
+              <p *ngIf="mensagemErro" class="alert alert-danger text-center mt-3">
+                {{ mensagemErro }}
+              </p>
+              <p *ngIf="mensagemSucesso" class="alert alert-success text-center mt-3">
+                {{ mensagemSucesso }}
+              </p>
+  
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  

@@ -7,9 +7,10 @@ export interface Chamado {
   id?: number;
   titulo: string;
   descricao: string;
-  status?: 'aberto' | 'em_andamento' | 'fechado';
-  prioridade?: 'baixa' | 'media' | 'alta';
+  status: 'aberto' | 'em_andamento' | 'pendente' | 'resolvido' | 'fechado';
+  prioridade: 'baixa' | 'media' | 'alta' | 'urgente';
   criado_por?: string; // ID do usuário
+  categoria_id: number; // ID da Categoria (Hardware/Software)
 }
 
 @Injectable({
@@ -47,7 +48,7 @@ export class ChamadoService {
   /**
    * Busca apenas os chamados do usuário logado
    */
-  async getMeusChamados() {
+  async getMeusChamados(): Promise<Chamado[]> {
     const usuario = this.authService.usuarioAtual;
     if (!usuario) return []; // Se não tem usuário, retorna array vazio
 
@@ -67,15 +68,17 @@ export class ChamadoService {
   /**
    * Cria um novo chamado
    */
-  async criarChamado(novoChamado: Chamado) {
+  async criarChamado(novoChamado: Omit<Chamado, 'id' | 'criado_por' | 'status'>) {
     const usuario = this.authService.usuarioAtual;
     if (!usuario) throw new Error('Usuário não autenticado.');
 
     const { data, error } = await this.supabase
       .from('chamados')
       .insert({
-        ...novoChamado, // Título, Descrição, etc.
-        criado_por: usuario.id // Associa o chamado ao usuário logado
+        // ...novoChamado (passa titulo, descricao, prioridade, categoria_id)
+        ...novoChamado,
+        criado_por: usuario.id, // Associa o chamado ao usuário logado
+        status: 'aberto' // O status inicial é sempre 'aberto'
       })
       .select(); // Retorna o registro que acabou de ser criado
 

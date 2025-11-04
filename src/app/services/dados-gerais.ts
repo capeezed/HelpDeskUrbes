@@ -12,6 +12,11 @@ export interface Cargo {
   setor_id: number;
 }
 
+export interface Categoria {
+  id: number;
+  nome: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -52,6 +57,19 @@ export class DadosGerais {
 
     if (error) {
       console.error('Erro ao buscar cargos:', error);
+      return [];
+    }
+    return data;
+  }
+
+  async getCategorias(): Promise<Categoria[]> {
+    const { data, error } = await this.supabase
+      .from('categorias')
+      .select('id, nome')
+      .order('nome');
+    
+    if (error) {
+      console.error('Erro ao buscar categorias:', error);
       return [];
     }
     return data;
