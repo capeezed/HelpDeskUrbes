@@ -1,0 +1,123 @@
+<!-- src/app/pages/admin/fila-chamados/fila-chamados.component.html -->
+<app-header></app-header>
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="text-green-primary">Fila de Atendimento - TI</h1>
+    <!-- Aqui podemos adicionar filtros no futuro (ex: Abertos, Fechados) -->
+  </div>
+
+  <!-- 
+    BLOCO DE FILTROS (NOVO)
+    (filtroAtual$ | async) nos diz qual botão deve ficar 'ativo'
+  -->
+  <div class="mb-3" *ngIf="filtroAtual$ | async as filtro">
+    <div class="btn-group" role="group" aria-label="Filtro de Status">
+      <button 
+        type="button" 
+        class="btn"
+        [class.btn-primary]="filtro === 'aberto'"
+        [class.btn-outline-primary]="filtro !== 'aberto'"
+        (click)="mudarFiltro('aberto')">
+        Abertos
+      </button>
+      <button 
+        type="button" 
+        class="btn"
+        [class.btn-primary]="filtro === 'em_andamento'"
+        [class.btn-outline-primary]="filtro !== 'em_andamento'"
+        (click)="mudarFiltro('em_andamento')">
+        Em Andamento
+      </button>
+      <button 
+        type="button" 
+        class="btn"
+        [class.btn-primary]="filtro === 'fechado'"
+        [class.btn-outline-primary]="filtro !== 'fechado'"
+        (click)="mudarFiltro('fechado')">
+        Fechados
+      </button>
+       <button 
+        type="button" 
+        class="btn"
+        [class.btn-primary]="filtro === ''"
+        [class.btn-outline-primary]="filtro !== ''"
+        (click)="mudarFiltro('')">
+        Todos
+      </button>
+    </div>
+  </div>
+  <!-- 
+    Usamos o 'chamados$' (do nosso .ts)
+    e o 'async' pipe para mostrar os dados.
+  -->
+  <div *ngIf="chamados$ | async as chamados; else loading">
+    
+    <!-- Se não houver chamados -->
+    <div *ngIf="chamados.length === 0" class="alert alert-info">
+      Não há nenhum chamado na fila no momento. Bom trabalho!
+    </div>
+
+    <!-- Tabela de Chamados -->
+    <div *ngIf="chamados.length > 0" class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Status</th>
+              <th scope="col">Título</th>
+              <th scope="col">Solicitante (ID)</th>
+              <th scope="col">Prioridade</th>
+              <th scope="col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let chamado of chamados">
+              
+              <!-- Status -->
+              <td>
+                <span class="badge rounded-pill fs-6" [ngClass]="getStatusClass(chamado.status)">
+                  {{ chamado.status | titlecase }}
+                </span>
+              </td>
+
+              <!-- Título -->
+              <td>{{ chamado.titulo }}</td>
+
+              <!-- Solicitante -->
+              <!-- 
+                Por enquanto, mostramos o ID.
+                Na próxima página (detalhes), faremos um JOIN no backend
+                para mostrar o nome, setor e cargo do solicitante.
+              -->
+              <td>{{ chamado.criado_por_id }}</td>
+
+              <!-- Prioridade (Definida pelo sistema/banco) -->
+              <td>{{ chamado.prioridade | titlecase }}</td>
+
+              <!-- Ações -->
+              <td>
+                <!-- 
+                  Este link usa o ID do chamado para navegar
+                  para a página de detalhes que faremos a seguir.
+                -->
+                <a [routerLink]="['/admin/chamado', chamado.id]" class="btn btn-outline-primary btn-sm">
+                  Ver Detalhes
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template de "Carregando..." -->
+  <ng-template #loading>
+    <div class="text-center mt-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <p>Buscando todos os chamados...</p>
+    </div>
+  </ng-template>
+</div>

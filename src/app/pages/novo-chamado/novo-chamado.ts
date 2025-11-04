@@ -1,8 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-// 1. MUDANÇA AQUI: Importamos 'NovoChamado' como 'NovoChamadoData' para evitar conflito
 import { ChamadoService, NovoChamado as NovoChamadoData } from '../../services/chamado';
-import { DadosGerais, Categoria } from '../../services/dados-gerais';
 
 @Component({
   selector: 'app-novo-chamado',
@@ -10,84 +8,72 @@ import { DadosGerais, Categoria } from '../../services/dados-gerais';
   templateUrl: './novo-chamado.html',
   styleUrls: ['./novo-chamado.css']
 })
-// O nome da sua classe é 'NovoChamado'
-export class NovoChamado implements OnInit {
+export class NovoChamado {
 
-  // Variáveis do Formulário
+  // Variáveis do Formulário (muito mais simples)
   titulo = '';
-  categoriaId: number | null = null;
-  prioridade: 'baixa' | 'media' | 'alta' | 'urgente' = 'baixa'; // Valor padrão
   descricao = '';
-
+  // Categoria e Prioridade removidos
+  arquivoSelecionado: File | null = null;
   // Estado da Página
-  listaDeCategorias: Categoria[] = [];
-  isLoadingDados = true;
   isLoading = false;
   mensagemErro = '';
   mensagemSucesso = '';
 
   constructor(
-    private dadosGeraisService: DadosGerais,
     private chamadoService: ChamadoService,
     private router: Router
+    // Não precisamos mais do DadosGerais!
   ) { }
 
-  ngOnInit(): void {
-    // Busca as categorias assim que a página carrega
-    this.carregarCategorias();
+  // Não precisamos de ngOnInit ou carregarCategorias!
+
+  onFileSelected(event: any): void {
+    if (event.target.files && event.target.files.length > 0) {
+      this.arquivoSelecionado = event.target.files[0];
+    } else {
+      this.arquivoSelecionado = null;
+    }
   }
 
-  carregarCategorias() {
-    this.isLoadingDados = true;
-    this.dadosGeraisService.getCategorias().subscribe({
-      next: (categorias) => {
-        this.listaDeCategorias = categorias;
-        this.isLoadingDados = false;
-      },
-      error: (err) => {
-        this.isLoadingDados = false;
-        this.mensagemErro = 'Falha ao carregar categorias.';
-        console.error(err);
-      }
-    });
-  }
-
-  async handleNovoChamado() {
+async handleNovoChamado() {
     this.mensagemErro = '';
     this.mensagemSucesso = '';
     
-    // Validação
-    if (!this.titulo || !this.categoriaId || !this.descricao) {
-      this.mensagemErro = 'Por favor, preencha todos os campos obrigatórios.';
+    if (!this.titulo || !this.descricao) {
+      this.mensagemErro = 'Por favor, preencha o Título e a Descrição.';
       return;
     }
 
     this.isLoading = true;
 
-    // 2. MUDANÇA AQUI: Usamos o apelido 'NovoChamadoData'
-    const novoChamado: NovoChamadoData = {
-      titulo: this.titulo,
-      descricao: this.descricao,
-      categoria_id: this.categoriaId,
-      prioridade: this.prioridade
-    };
+    // --- MUDANÇA PRINCIPAL: Construir FormData ---
+    const formData = new FormData();
+    formData.append('titulo', this.titulo);
+    formData.append('descricao', this.descricao);
+    
+    // Anexa o ficheiro SÓ SE ele foi selecionado
+    if (this.arquivoSelecionado) {
+      // O nome 'anexo' DEVE ser o mesmo que o backend espera
+      // no 'upload.single('anexo')'
+      formData.append('anexo', this.arquivoSelecionado, this.arquivoSelecionado.name);
+    }
+    // ------------------------------------------
 
-    this.chamadoService.criarChamado(novoChamado).subscribe({
+    // Chama o serviço atualizado com o FormData
+    this.chamadoService.criarChamado(formData).subscribe({
       next: (response) => {
         this.isLoading = false;
         this.mensagemSucesso = 'Chamado aberto com sucesso! Redirecionando...';
         
-        // Limpa o formulário (opcional)
         this.titulo = '';
-        this.categoriaId = null;
-        this.prioridade = 'baixa';
         this.descricao = '';
+        this.arquivoSelecionado = null;
+        // (idealmente, você também resetaria o input type="file" no HTML)
 
-        // Redireciona de volta para o Dashboard após 2 segundos
         setTimeout(() => {
           this.router.navigate(['/dashboard']);
         }, 2000);
-
       },
       error: (err) => {
         this.isLoading = false;
@@ -97,4 +83,3 @@ export class NovoChamado implements OnInit {
     });
   }
 }
-

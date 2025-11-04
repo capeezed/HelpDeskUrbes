@@ -7,11 +7,16 @@
       </a>
   
       <ul class="navbar-nav me-auto">
-        <li class="nav-item">
+        <li *ngIf="!authService.ehTecnico" class="nav-item">
           <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Meus Chamados</a>
         </li>
-        <li class="nav-item">
+        <li *ngIf="!authService.ehTecnico" class="nav-item">
           <a class="nav-link" routerLink="/novo-chamado" routerLinkActive="active">Abrir Chamado</a>
+        </li>
+
+  <!-- === LINK DE TÉCNICO === -->
+        <li *ngIf="authService.ehTecnico" class="nav-item">
+          <a class="nav-link" routerLink="/admin/fila" routerLinkActive="active">Fila de Chamados</a>
         </li>
       </ul>
   

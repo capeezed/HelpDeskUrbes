@@ -10,17 +10,19 @@ export interface User {
   id: number;
   email: string;
   nivel: 'funcionario' | 'tecnico' | 'admin';
+  setor: string; // O token agora tem isso
+  cargo: string; // O token agora tem isso
   iat: number;
   exp: number;
 }
 
-// Interface que seu backend espera no cadastro
+// Interface que seu backend espera no cadastro (SIMPLIFICADA)
 export interface CadastroData {
   email: string;
   pass: string;
   nomeCompleto: string;
-  setorId: number;
-  cargoId: number;
+  setor: string; // <-- MUDOU DE setorId
+  cargo: string; // <-- MUDOU DE cargoId
 }
 
 @Injectable({
@@ -39,6 +41,13 @@ export class AuthService {
     this.loadUserFromToken();
   }
 
+  public get ehTecnico(): boolean {
+    const usuario = this.userSubject.value;
+    if (!usuario) {
+      return false;
+    }
+    return usuario.nivel === 'tecnico' || usuario.nivel === 'admin';
+  }
   /**
    * Tenta carregar o token do localStorage
    */

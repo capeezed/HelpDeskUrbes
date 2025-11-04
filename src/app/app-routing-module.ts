@@ -7,6 +7,9 @@ import { Dashboard } from './pages/dashboard/dashboard';
 import { Secure } from './layout/secure/secure';
 import { AuthGuard } from './services/auth-guard';
 import { NovoChamado } from './pages/novo-chamado/novo-chamado'
+import { TecnicoGuard } from './services/tecnico-guard';
+import { FilaChamados } from './pages/admin/fila-chamados/fila-chamados';
+import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
 
 const routes: Routes = [
   { path: 'login', component: Login},
@@ -30,6 +33,15 @@ const routes: Routes = [
         component: NovoChamado
       }
     ]
+  },
+
+  {
+    path: 'admin',
+        canActivate: [TecnicoGuard], // 2. PROTEGIDO PELO NOVO GUARD
+        children: [
+          { path: 'fila', component: FilaChamados },
+          { path: 'chamado/:id', component: DetalheChamado }
+        ]
   },
 
   {

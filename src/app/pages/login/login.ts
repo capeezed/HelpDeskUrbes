@@ -26,26 +26,22 @@ export class Login {
   /**
    * 2. Função de login REFATORADA para .subscribe()
    */
-  handleLogin() { // Não é mais 'async'
-    this.mensagemErro = '';
-    this.isLoading = true; // 3. LIGA o "carregando"
-
+  handleLogin() {
+    this.isLoading = true;
     this.authService.loginComEmail(this.email, this.password).subscribe({
-      
-      // Callback de Sucesso
       next: (response) => {
-        this.isLoading = false; // 4. DESLIGA o "carregando"
-        // O AuthService já salvou o token e atualizou o user$
-        // Apenas redirecionamos para o dashboard
-        this.router.navigate(['/dashboard']);
+        this.isLoading = false;
+        
+        // --- LÓGICA DE REDIRECIONAMENTO ---
+        if (this.authService.ehTecnico) {
+          this.router.navigate(['/admin/fila']); // Vai para a Fila de TI
+        } else {
+          this.router.navigate(['/dashboard']); // Vai para o Dashboard normal
+        }
+        
       },
-      
-      // Callback de Erro
       error: (err) => {
-        this.isLoading = false; // 5. DESLIGA o "carregando"
-        // O backend (server.js) envia a mensagem de erro
-        this.mensagemErro = err.error?.message || 'Email ou senha inválidos.';
-        console.error(err);
+        // ... (seu código de erro)
       }
     });
   }

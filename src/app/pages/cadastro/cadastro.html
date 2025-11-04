@@ -22,38 +22,15 @@
           <input id="email" type="email" class="form-control" [(ngModel)]="email" name="email" required>
         </div>
 
-        <!-- Setor e Cargo -->
+        <!-- MUDANÇA AQUI: Setor e Cargo como inputs de texto -->
         <div class="row">
           <div class="col-md-6 mb-3">
             <label for="setor" class="form-label">Setor:</label>
-            <select id="setor" 
-                    class="form-select" 
-                    name="setor"
-                    [(ngModel)]="setorSelecionadoId"
-                    (change)="onSetorChange()">
-              <option [ngValue]="null" disabled>
-                {{ isLoadingDados ? 'Carregando...' : 'Selecione um setor' }}
-              </option>
-              <option *ngFor="let setor of listaDeSetores" [ngValue]="setor.id">
-                {{ setor.nome }}
-              </option>
-            </select>
+            <input id="setor" type="text" class="form-control" [(ngModel)]="setor" name="setor" placeholder="Ex: SSA" required>
           </div>
-          
           <div class="col-md-6 mb-3">
             <label for="cargo" class="form-label">Cargo:</label>
-            <select id="cargo" 
-                    class="form-select" 
-                    name="cargo"
-                    [(ngModel)]="cargoSelecionadoId"
-                    [disabled]="!setorSelecionadoId">
-              <option [ngValue]="null" disabled>
-                {{ !setorSelecionadoId ? 'Escolha um setor primeiro' : 'Selecione um cargo' }}
-              </option>
-              <option *ngFor="let cargo of listaDeCargosFiltrada" [ngValue]="cargo.id">
-                {{ cargo.nome }}
-              </option>
-            </select>
+            <input id="cargo" type="text" class="form-control" [(ngModel)]="cargo" name="cargo" placeholder="Ex: Auxiliar" required>
           </div>
         </div>
 
@@ -69,10 +46,7 @@
           <input id="confirmPassword" type="password" class="form-control" [(ngModel)]="confirmPassword" name="confirmPassword" required>
         </div>
 
-        <!-- 
-          BOTÃO ATUALIZADO 
-          Mostra o spinner e desabilita quando isLoading = true
-        -->
+        <!-- Botão de Submit (com lógica de loading) -->
         <button type="submit" class="btn btn-primary w-100 mb-3" [disabled]="isLoading">
           <span *ngIf="!isLoading">Criar Conta</span>
           <span *ngIf="isLoading">
@@ -81,17 +55,15 @@
           </span>
         </button>
 
-        <!-- Mensagens de Erro e Sucesso -->
+        <!-- Mensagens -->
         <p *ngIf="mensagemErro" class="alert alert-danger text-center">
           {{ mensagemErro }}
         </p>
         <p *ngIf="mensagemSucesso" class="alert alert-success text-center">
           {{ mensagemSucesso }}
-        </p> <!-- <-- AQUI ESTAVA O ERRO, AGORA CORRIGIDO -->
-
+        </p>
       </form>
 
-      <!-- Link para Login -->
       <div class="text-center mt-3">
         <p class="mb-0">
           Já tem uma conta? <a routerLink="/login" class="text-green-primary">Faça o login</a>
@@ -100,4 +72,3 @@
     </div>
   </div>
 </div>
-

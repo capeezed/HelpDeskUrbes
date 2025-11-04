@@ -1,0 +1,113 @@
+<!-- src/app/pages/admin/detalhe-chamado/detalhe-chamado.component.html -->
+
+<div class="container mt-4" *ngIf="chamado$ | async as chamado; else loadingOrError">
+  
+  <!-- Botão de Voltar -->
+  <a routerLink="/admin/fila" class="btn btn-outline-secondary mb-3">
+    &larr; Voltar para a Fila
+  </a>
+
+  <div class="row">
+    <!-- Coluna Principal: Detalhes do Chamado -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h4 class="mb-0 text-green-primary">{{ chamado.titulo }}</h4>
+          <span class="badge rounded-pill fs-6" [ngClass]="getStatusClass(chamado.status)">
+            {{ chamado.status | titlecase }}
+          </span>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">Descrição do Problema:</h5>
+          <!-- 'white-space: pre-wrap' preserva as quebras de linha que o usuário digitou -->
+          <p class="card-text bg-light p-3 rounded" style="white-space: pre-wrap;">{{ chamado.descricao }}</p>
+
+          <!-- 
+            AQUI ESTÁ A CORREÇÃO!
+            Esta secção mostra a imagem, mas só se 'anexo_url' não for nulo.
+          -->
+          <div *ngIf="chamado.anexo_url">
+            <h5 class="card-title mt-3">Anexo (Print do Problema):</h5>
+            <a [href]="chamado.anexo_url" target="_blank" rel="noopener noreferrer">
+              <img [src]="chamado.anexo_url" class="img-fluid rounded border" alt="Anexo do chamado">
+            </a>
+            <small class="form-text text-muted">
+              Clique na imagem para abrir numa nova aba.
+            </small>
+          </div>
+          <!-- FIM DA CORREÇÃO -->
+
+
+          <hr>
+          <h6>Detalhes do Solicitante:</h6>
+          <ul class="list-unstyled">
+            <!-- Estes campos vêm do JOIN no backend -->
+            <li><strong>Nome:</strong> {{ chamado.solicitante_nome }}</li>
+            <li><strong>Setor:</strong> {{ chamado.solicitante_setor }}</li>
+            <li><strong>Cargo:</strong> {{ chamado.solicitante_cargo }}</li>
+            <hr>
+            <li><strong>ID do Usuário:</strong> {{ chamado.criado_por_id }}</li>
+            <li><strong>Data da Abertura:</strong> {{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna Lateral: Ações do Técnico -->
+    <div class="col-lg-4 mt-4 mt-lg-0">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Ações do Técnico</h5>
+        </div>
+        <div class="card-body">
+          <!-- Informações de Atribuição -->
+          <div classs="mb-3">
+            <strong>Atribuído para:</strong>
+            <p *ngIf="!chamado.atribuido_para_id" class="text-danger">Ninguém (Aguardando)</p>
+            <p *ngIf="chamado.atribuido_para_id" class="text-success">Técnico ID: {{ chamado.atribuido_para_id }}</p>
+          </div>
+
+          <!-- Botão "Atribuir a mim" (só aparece se estiver 'aberto') -->
+          <div class="d-grid gap-2" *ngIf="chamado.status === 'aberto'">
+            <button class="btn btn-success" (click)="atribuirAMim(chamado.id)" [disabled]="isLoading">
+              <span *ngIf="!isLoading">Atribuir a mim</span>
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm"></span>
+            </button>
+          </div>
+
+          <!-- Ações de Status (só aparecem DEPOIS de atribuído) -->
+          <div class="d-grid gap-2 mt-3" *ngIf="chamado.status !== 'aberto' && chamado.status !== 'fechado'">
+            <button class="btn btn-primary" (click)="mudarStatus(chamado.id, 'resolvido')" [disabled]="isLoading">
+              Marcar como Resolvido
+            </button>
+            <button class="btn btn-secondary" (click)="mudarStatus(chamado.id, 'pendente')" [disabled]="isLoading">
+              Marcar como Pendente
+            </button>
+            <button class="btn btn-danger" (click)="mudarStatus(chamado.id, 'fechado')" [disabled]="isLoading">
+              Fechar Chamado
+            </button>
+          </div>
+
+          <!-- Mensagem de erro/sucesso das ações -->
+          <p *ngIf="mensagemAcao" class="alert alert-success text-center mt-3">{{ mensagemAcao }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Template de Loading ou Erro -->
+<ng-template #loadingOrError>
+  <!-- Mostra o loading -->
+  <div *ngIf="!mensagemErro" class="text-center mt-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Carregando...</span>
+    </div>
+    <p>Buscando detalhes do chamado...</p>
+  </div>
+  
+  <!-- Mostra o erro, se houver -->
+  <div *ngIf="mensagemErro" class="alert alert-danger mt-4">
+    <strong>Erro:</strong> {{ mensagemErro }}
+  </div>
+</ng-template>
