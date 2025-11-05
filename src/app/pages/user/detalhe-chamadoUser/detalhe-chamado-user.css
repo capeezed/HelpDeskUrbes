@@ -1,0 +1,43 @@
+.descricao {
+  white-space: pre-wrap;
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.chat-box {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.msg {
+  padding: 8px 12px;
+  background: #efefef;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  width: fit-content;
+  max-width: 90%;
+}
+
+.msg.meu {
+  background: #d1ffd1;
+  margin-left: auto;
+}
+
+.msg .autor {
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.msg .data {
+  font-size: 11px;
+  color: gray;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}

@@ -1,0 +1,75 @@
+<div class="container mt-4" *ngIf="chamado$ | async as chamado; else carregando">
+
+  <a routerLink="/dashboard" class="btn btn-outline-secondary mb-3">
+    &larr; Voltar
+  </a>
+
+  <div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between">
+      <h4>{{ chamado.titulo }}</h4>
+      <span class="badge bg-info text-dark status-badge">
+        {{ chamado.status | titlecase }}
+      </span>
+    </div>
+
+    <div class="card-body">
+      <p class="descricao">{{ chamado.descricao }}</p>
+
+      <div *ngIf="chamado.anexo_url" class="mt-3">
+        <h6>Anexo:</h6>
+        <a [href]="chamado.anexo_url" target="_blank">
+          <img [src]="chamado.anexo_url" class="img-fluid rounded border">
+        </a>
+      </div>
+
+      <hr>
+
+      <p><strong>Atribuído a:</strong>
+        {{ chamado.tecnico_atribuido_nome || 'Aguardando técnico' }}
+      </p>
+
+      <p><strong>Aberto em:</strong>
+        {{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="card mt-4 shadow-sm">
+    <div class="card-header">
+      <h5>Comentários</h5>
+    </div>
+
+    <div class="card-body chat-box">
+
+      <div *ngIf="comentarios.length === 0" class="text-muted">
+        Nenhum comentário ainda.
+      </div>
+
+      <div *ngFor="let c of comentarios" class="msg" 
+           [ngClass]="{ 'meu': isMeuComentario(c.autor) }">
+
+        <div class="autor">{{ c.autor }}</div>
+        <div class="texto">{{ c.texto }}</div>
+        <div class="data">{{ c.criado_em | date:'dd/MM/yyyy HH:mm' }}</div>
+      </div>
+
+      <textarea class="form-control mt-3" [(ngModel)]="novoComentario" rows="3"
+                placeholder="Escreva um comentário..."></textarea>
+
+      <button class="btn btn-success mt-2 w-100"
+              (click)="enviarComentario()"
+              [disabled]="isLoadingComentario">
+        {{ isLoadingComentario ? 'Enviando...' : 'Enviar' }}
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<ng-template #carregando>
+  <div class="text-center mt-5">
+    <div class="spinner-border"></div>
+    <p>Carregando...</p>
+  </div>
+</ng-template>

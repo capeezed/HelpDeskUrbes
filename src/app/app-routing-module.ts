@@ -1,15 +1,16 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { Login } from './pages/login/login';
-import { Cadastro } from './pages/cadastro/cadastro';
-import { Dashboard } from './pages/dashboard/dashboard';
+import { Login } from './pages/user/login/login';
+import { Cadastro } from './pages/user/cadastro/cadastro';
+import { Dashboard } from './pages/user/dashboard/dashboard';
 import { Secure } from './layout/secure/secure';
 import { AuthGuard } from './services/auth-guard';
-import { NovoChamado } from './pages/novo-chamado/novo-chamado'
+import { NovoChamado } from './pages/user/novo-chamado/novo-chamado'
 import { TecnicoGuard } from './services/tecnico-guard';
 import { FilaChamados } from './pages/admin/fila-chamados/fila-chamados';
 import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
+import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-chamado-user';
 
 const routes: Routes = [
   { path: 'login', component: Login},
@@ -31,10 +32,12 @@ const routes: Routes = [
       {
         path: 'novo-chamado',
         component: NovoChamado
+      },
+      { path: 'meus-chamados/detalhe/:id', 
+        component: DetalheChamadoUser 
       }
     ]
   },
-
   {
     path: 'admin',
         canActivate: [TecnicoGuard], // 2. PROTEGIDO PELO NOVO GUARD

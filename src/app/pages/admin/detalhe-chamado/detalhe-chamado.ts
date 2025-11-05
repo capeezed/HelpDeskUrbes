@@ -1,24 +1,21 @@
-// src/app/pages/admin/detalhe-chamado/detalhe-chamado.component.ts
-
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, switchMap, tap, catchError, of, map } from 'rxjs'; // Importe 'map'
+import { Observable, switchMap, tap, catchError, of, map } from 'rxjs';
 import { Chamado, ChamadoService } from '../../../services/chamado';
-
-// 1. IMPORTS NECESSÁRIOS
-import { PerfilTecnico, DadosGerais } from '../../../services/dados-gerais'; // Verifique o caminho
+import { PerfilTecnico, DadosGerais } from '../../../services/dados-gerais';
 import { AuthService } from '../../../services/auth.service';
+import { ComentariosService } from '../../../services/comentarios';
 import { CommonModule } from '@angular/common'; 
 import { RouterModule } from '@angular/router'; 
 import { FormsModule } from '@angular/forms'; 
 
 @Component({
   selector: 'app-detalhe-chamado',
-  standalone: true, 
+  standalone: true,
   imports: [
-    CommonModule,   
-    RouterModule,   
-    FormsModule     
+    CommonModule,
+    RouterModule,
+    FormsModule
   ],
   templateUrl: './detalhe-chamado.html',
   styleUrls: ['./detalhe-chamado.css']
@@ -26,11 +23,11 @@ import { FormsModule } from '@angular/forms';
 export class DetalheChamado implements OnInit {
 
   chamado$!: Observable<Chamado | null>;
-  
-  // 2. VERIFIQUE SE ESTAS PROPRIEDADES ESTÃO DECLARADAS
   listaTecnicos$!: Observable<PerfilTecnico[]>;
   tecnicoSelecionadoId: number | null = null;
-  
+  comentarios: any[] = [];
+  novoComentario: string = '';
+
   isLoading = false;
   mensagemErro = '';
   mensagemAcao = '';
@@ -39,15 +36,15 @@ export class DetalheChamado implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private chamadoService: ChamadoService,
-    private dadosGeraisService: DadosGerais, // 3. VERIFIQUE SE O SERVIÇO ESTÁ INJETADO
-    public authService: AuthService 
+    private dadosGeraisService: DadosGerais,
+    public authService: AuthService,
+    private comentariosService: ComentariosService
   ) {}
 
   ngOnInit(): void {
     this.carregarChamado();
-    
-    // 4. ESTA É A CHAMADA IMPORTANTE
     this.carregarTecnicos();
+    this.carregarComentarios();
   }
 
   carregarChamado(): void {
@@ -58,75 +55,65 @@ export class DetalheChamado implements OnInit {
           this.mensagemErro = 'ID do chamado não fornecido.';
           return of(null);
         }
-        return this.chamadoService.getChamadoById(+id).pipe( 
+        return this.chamadoService.getChamadoById(+id).pipe(
           tap(chamado => {
-            if (chamado && chamado.atribuido_para_id) {
-              this.tecnicoSelecionadoId = chamado.atribuido_para_id;
-            } else {
-              this.tecnicoSelecionadoId = null; 
-            }
+            this.tecnicoSelecionadoId = chamado?.atribuido_para_id || null;
           }),
           catchError(err => {
             this.mensagemErro = `Erro ao buscar chamado: ${err.error.message || err.message}`;
-            return of(null); 
+            return of(null);
           })
         );
       })
     );
   }
 
-  // 5. FUNÇÃO PARA CARREGAR TÉCNICOS (COM FILTRO)
   carregarTecnicos(): void {
     const idUsuarioAtual = this.authService.usuarioAtual?.id;
 
     this.listaTecnicos$ = this.dadosGeraisService.getTecnicos().pipe(
-      map(tecnicos => 
-        // Filtra a lista para remover o utilizador que já está logado
-        // (Para que "Rafael" não apareça 2x se ele for o 'suporte.ti')
-        tecnicos.filter(t => t.id !== idUsuarioAtual)
-      ),
+      map(tecnicos => tecnicos.filter(t => t.id !== idUsuarioAtual)),
       catchError(err => {
-        // Se a chamada falhar, pelo menos o dropdown não fica vazio
         console.error("Erro ao carregar lista de técnicos", err);
         this.mensagemErro = "Não foi possível carregar a lista de técnicos.";
-        return of([]); // Retorna um array vazio em caso de erro
+        return of([]);
       })
     );
   }
 
+  carregarComentarios(): void {
+    const id = Number(this.route.snapshot.paramMap.get('id'));
+    if (!id) return;
 
-  // --- AÇÕES DO TÉCNICO ---
+    this.comentariosService.getComentarios(id)
+      .subscribe(res => this.comentarios = res);
+  }
+
+  enviarComentario(): void {
+    if (!this.novoComentario.trim()) return;
+
+    const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.comentariosService.enviarComentario(id, this.novoComentario)
+      .subscribe(() => {
+        this.novoComentario = '';
+        this.carregarComentarios();
+      });
+  }
 
   atribuirChamado(id: number) {
     if (!this.tecnicoSelecionadoId) {
       alert('Por favor, selecione um técnico no dropdown.');
       return;
     }
-    
+
     this.isLoading = true;
     this.mensagemAcao = '';
-    
+
     this.chamadoService.atribuirChamado(id, this.tecnicoSelecionadoId).subscribe({
       next: () => {
         this.isLoading = false;
         this.mensagemAcao = 'Chamado atribuído com sucesso!';
-        this.carregarChamado(); 
-      },
-      error: (err) => {
-        this.isLoading = false;
-        alert('Erro: ' + err.error.message);
-      }
-    });
-  }
-
-  mudarStatus(id: number, novoStatus: 'resolvido' | 'pendente' | 'fechado') {
-    this.isLoading = true;
-    this.mensagemAcao = '';
-    this.chamadoService.mudarStatus(id, novoStatus).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.mensagemAcao = `Status alterado para ${novoStatus}!`;
-        this.carregarChamado(); 
+        this.carregarChamado();
       },
       error: (err) => {
         this.isLoading = false;
@@ -144,5 +131,21 @@ export class DetalheChamado implements OnInit {
       case 'pendente': return 'bg-info text-dark';
       default: return 'bg-light text-dark';
     }
+  }
+
+  mudarStatus(id: number, novoStatus: 'resolvido' | 'pendente' | 'fechado') {
+    this.isLoading = true;
+    this.mensagemAcao = '';
+    this.chamadoService.mudarStatus(id, novoStatus).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.mensagemAcao = `Status alterado para ${novoStatus}!`;
+        this.carregarChamado();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        alert('Erro: ' + err.error.message);
+      }
+    });
   }
 }

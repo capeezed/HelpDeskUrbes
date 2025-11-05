@@ -2,7 +2,7 @@
 
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChamadoService, NovoChamado as NovoChamadoData } from '../../services/chamado';
+import { ChamadoService, NovoChamado as NovoChamadoData } from '../../../services/chamado';
 
 // --- CORRECÇÃO ESTÁ AQUI ---
 import { CommonModule } from '@angular/common';   // Para *ngIf, *ngFor, [ngClass]

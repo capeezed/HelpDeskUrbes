@@ -10,6 +10,7 @@ export interface User {
   id: number;
   email: string;
   nivel: 'funcionario' | 'tecnico' | 'admin';
+  nome_completo: string;
   setor: string; // O token agora tem isso
   cargo: string; // O token agora tem isso
   iat: number;

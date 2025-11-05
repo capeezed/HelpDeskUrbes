@@ -8,7 +8,8 @@
   </a>
 
   <div class="row">
-    <!-- Coluna Principal: Detalhes do Chamado -->
+    
+    <!-- ===================== COLUNA PRINCIPAL ===================== -->
     <div class="col-lg-8">
       <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -17,15 +18,14 @@
             {{ chamado.status | titlecase }}
           </span>
         </div>
+
         <div class="card-body">
           <h5 class="card-title">Descrição do Problema:</h5>
-          <!-- 'white-space: pre-wrap' preserva as quebras de linha que o usuário digitou -->
-          <p class="card-text bg-light p-3 rounded" style="white-space: pre-wrap;">{{ chamado.descricao }}</p>
+          <p class="card-text bg-light p-3 rounded" style="white-space: pre-wrap;">
+            {{ chamado.descricao }}
+          </p>
 
-          <!-- 
-            AQUI ESTÁ A CORREÇÃO!
-            Esta secção mostra a imagem, mas só se 'anexo_url' não for nulo.
-          -->
+          <!-- Anexo (se existir) -->
           <div *ngIf="chamado.anexo_url">
             <h5 class="card-title mt-3">Anexo (Print do Problema):</h5>
             <a [href]="chamado.anexo_url" target="_blank" rel="noopener noreferrer">
@@ -35,13 +35,11 @@
               Clique na imagem para abrir numa nova aba.
             </small>
           </div>
-          <!-- FIM DA CORREÇÃO -->
-
 
           <hr>
+
           <h6>Detalhes do Solicitante:</h6>
           <ul class="list-unstyled">
-            <!-- Estes campos vêm do JOIN no backend -->
             <li><strong>Nome:</strong> {{ chamado.solicitante_nome }}</li>
             <li><strong>Setor:</strong> {{ chamado.solicitante_setor }}</li>
             <li><strong>Cargo:</strong> {{ chamado.solicitante_cargo }}</li>
@@ -49,64 +47,80 @@
             <li><strong>ID do Usuário:</strong> {{ chamado.criado_por_id }}</li>
             <li><strong>Data da Abertura:</strong> {{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}</li>
           </ul>
+
+          <!-- ===================== CHAT DE COMENTÁRIOS ===================== -->
+          <hr>
+          <h5 class="mt-4">Comentários</h5>
+
+          <div class="chat-container mt-2">
+
+            <div class="mensagens d-flex flex-column">
+
+              <div *ngFor="let c of comentarios"
+                  class="mensagem"
+                  [ngClass]="{
+                    'func': c.autor_nivel === 'funcionario',
+                    'tec': c.autor_nivel === 'tecnico'
+                  }">
+
+                <div class="autor">{{ c.autor }} ({{ c.autor_nivel }})</div>
+                <div class="texto">{{ c.texto }}</div>
+                <div class="data">{{ c.criado_em | date:'dd/MM/yyyy HH:mm' }}</div>
+              </div>
+
+            </div>
+
+            <div class="enviar-box mt-2">
+              <input type="text" [(ngModel)]="novoComentario" class="form-control" placeholder="Digite uma mensagem...">
+              <button class="btn btn-success" (click)="enviarComentario()">Enviar</button>
+            </div>
+
+          </div>
+          <!-- ===================== FIM DO CHAT ===================== -->
+
         </div>
       </div>
     </div>
 
-    <!-- Coluna Lateral: Ações do Técnico -->
-   <div class="col-lg-4 mt-4 mt-lg-0">
-  <div class="card shadow-sm">
-    <div class="card-header">
-      <h5 class="mb-0">Ações do Técnico</h5>
-    </div>
-    <div class="card-body">
+    <!-- ===================== COLUNA LATERAL ===================== -->
+    <div class="col-lg-4 mt-4 mt-lg-0">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Ações do Técnico</h5>
+        </div>
+        <div class="card-body">
 
-      <!-- Informações de Atribuição (AGORA MOSTRA O NOME) -->
-      <div class="mb-3">
-        <strong>Atribuído para:</strong>
-        <p *ngIf="!chamado.atribuido_para_id" class="text-danger">Ninguém (Aguardando)</p>
-        <!-- Mostra o nome do técnico que o backend enviou -->
-        <p *ngIf="chamado.atribuido_para_id" class="text-success">
-          {{ chamado.tecnico_atribuido_nome || 'Técnico ID: ' + chamado.atribuido_para_id }}
-        </p>
-      </div>
+          <!-- Técnico atribuído -->
+          <div class="mb-3">
+            <strong>Atribuído para:</strong>
+            <p *ngIf="!chamado.atribuido_para_id" class="text-danger">Ninguém (Aguardando)</p>
+            <p *ngIf="chamado.atribuido_para_id" class="text-success">
+              {{ chamado.tecnico_atribuido_nome || 'Técnico ID: ' + chamado.atribuido_para_id }}
+            </p>
+          </div>
 
-      <!--
-        FEATURE NOVA: Dropdown de Atribuição
-        (Substitui o botão "Atribuir a mim")
-      -->
-      <div class="mb-3" *ngIf="chamado.status === 'aberto'">
-        <label for="tecnicoSelect" class="form-label">Atribuir para:</label>
-        <select class="form-select" id="tecnicoSelect" [(ngModel)]="tecnicoSelecionadoId">
-          <option [ngValue]="null" disabled>Selecione um técnico...</option>
-          <!-- 
-            O (authService.usuarioAtual.id) permite selecionar "Eu mesmo"
-            que é o Gabriel, Lucas ou Rafael que está logado
-          -->
-          <option [ngValue]="authService.usuarioAtual?.id">
-            (Atribuir a mim)
-          </option>
-          
-          <!-- Carrega a lista de TODOS os técnicos -->
-          <option *ngFor="let tecnico of listaTecnicos$ | async" [ngValue]="tecnico.id">
-            {{ tecnico.nome_completo }}
-          </option>
-        </select>
-      </div>
-      
-      <!-- Botão "Atribuir" (só aparece se estiver 'aberto') -->
-      <div class="d-grid gap-2" *ngIf="chamado.status === 'aberto'">
-        <button 
-          class="btn btn-success" 
-          (click)="atribuirChamado(chamado.id)" 
-          [disabled]="isLoading || !tecnicoSelecionadoId">
-          <span *ngIf="!isLoading">Atribuir</span>
-          <span *ngIf="isLoading" class="spinner-border spinner-border-sm"></span>
-        </button>
-      </div>
+          <!-- Dropdown de atribuição -->
+          <div class="mb-3" *ngIf="chamado.status === 'aberto'">
+            <label for="tecnicoSelect" class="form-label">Atribuir para:</label>
+            <select class="form-select" id="tecnicoSelect" [(ngModel)]="tecnicoSelecionadoId">
+              <option [ngValue]="null" disabled>Selecione um técnico...</option>
+              <option [ngValue]="authService.usuarioAtual?.id">(Atribuir a mim)</option>
+              <option *ngFor="let tecnico of listaTecnicos$ | async" [ngValue]="tecnico.id">
+                {{ tecnico.nome_completo }}
+              </option>
+            </select>
+          </div>
 
-          <!-- Ações de Status (só aparecem DEPOIS de atribuído) -->
-          <div class="d-grid gap-2 mt-3" *ngIf="chamado.status !== 'aberto' && chamado.status !== 'fechado'">
+          <div class="d-grid gap-2" *ngIf="chamado.status === 'aberto'">
+            <button class="btn btn-success" (click)="atribuirChamado(chamado.id)" [disabled]="isLoading || !tecnicoSelecionadoId">
+              <span *ngIf="!isLoading">Atribuir</span>
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm"></span>
+            </button>
+          </div>
+
+          <!-- Ações depois de atribuído -->
+          <div class="d-grid gap-2 mt-3"
+            *ngIf="chamado.status !== 'aberto' && chamado.status !== 'fechado'">
             <button class="btn btn-primary" (click)="mudarStatus(chamado.id, 'resolvido')" [disabled]="isLoading">
               Marcar como Resolvido
             </button>
@@ -118,25 +132,23 @@
             </button>
           </div>
 
-          <!-- Mensagem de erro/sucesso das ações -->
           <p *ngIf="mensagemAcao" class="alert alert-success text-center mt-3">{{ mensagemAcao }}</p>
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- Template de Loading ou Erro -->
+<!-- Template de loading/erro -->
 <ng-template #loadingOrError>
-  <!-- Mostra o loading -->
   <div *ngIf="!mensagemErro" class="text-center mt-5">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Carregando...</span>
     </div>
     <p>Buscando detalhes do chamado...</p>
   </div>
-  
-  <!-- Mostra o erro, se houver -->
+
   <div *ngIf="mensagemErro" class="alert alert-danger mt-4">
     <strong>Erro:</strong> {{ mensagemErro }}
   </div>

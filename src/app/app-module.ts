@@ -6,15 +6,16 @@ import { AuthHttpInterceptor } from './services/auth-http-interceptor';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
-import { Login } from './pages/login/login';
+import { Login } from './pages/user/login/login';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { Cadastro } from './pages/cadastro/cadastro';
-import { Dashboard } from './pages/dashboard/dashboard';
+import { Cadastro } from './pages/user/cadastro/cadastro';
+import { Dashboard } from './pages/user/dashboard/dashboard';
 import { Secure } from './layout/secure/secure';
 import { Header } from './components/header/header';
-import { NovoChamado } from './pages/novo-chamado/novo-chamado';
+import { NovoChamado } from './pages/user/novo-chamado/novo-chamado';
 import { FilaChamados } from './pages/admin/fila-chamados/fila-chamados';
 import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
+import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-chamado-user';
 
 @NgModule({
   declarations: [
@@ -25,6 +26,7 @@ import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
     Secure,
     Header,
     FilaChamados,
+    DetalheChamadoUser
     
   ],
   imports: [

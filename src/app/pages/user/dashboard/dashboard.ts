@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 // 1. Caminho do serviço corrigido
-import { Chamado, ChamadoService } from '../../services/chamado';
+import { Chamado, ChamadoService } from '../../../services/chamado';
 
 @Component({
   selector: 'app-dashboard',
