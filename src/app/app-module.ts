@@ -3,6 +3,8 @@ import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthHttpInterceptor } from './services/auth-http-interceptor';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { ToastrModule } from 'ngx-toastr';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
@@ -23,7 +25,6 @@ import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-cha
     Login,
     Cadastro,
     Dashboard,
-    Secure,
     Header,
     FilaChamados,
     DetalheChamadoUser
@@ -31,12 +32,20 @@ import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-cha
   ],
   imports: [
     BrowserModule,
+    BrowserAnimationsModule,
     AppRoutingModule,
     FormsModule,
     NgbModule,
     HttpClientModule,
     NovoChamado,
-    DetalheChamado
+    DetalheChamado,
+    ToastrModule.forRoot({
+      positionClass: 'toast-bottom-right',
+      timeOut: 5000,
+      progressBar: true,
+      closeButton: true
+    }),
+
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),

@@ -8,8 +8,9 @@
   
       <ul class="navbar-nav me-auto">
         <li *ngIf="!authService.ehTecnico" class="nav-item">
-          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Meus Chamados</a>
+          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true} ">Meus Chamados<span *ngIf="notify.totalUnread > 0" class="badge bg-danger ms-1">{{ notify.totalUnread }}</span></a>
         </li>
+        
         <li *ngIf="!authService.ehTecnico" class="nav-item">
           <a class="nav-link" routerLink="/novo-chamado" routerLinkActive="active">Abrir Chamado</a>
         </li>

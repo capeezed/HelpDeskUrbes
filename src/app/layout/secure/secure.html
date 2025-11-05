@@ -1,5 +1,28 @@
-<app-header></app-header>
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm px-3">
 
-<main class="container mt-4">
-  <router-outlet></router-outlet>
-</main>
+  <a class="navbar-brand fw-bold text-green-primary">HelpDesk Urbes</a>
+
+  <div class="ms-auto d-flex align-items-center gap-3">
+
+    <!-- 🔔 Ícone de notificações -->
+    <div class="position-relative me-3" style="cursor: pointer;" (click)="abrirNotificacoes()">
+      <i class="bi bi-bell fs-4"></i>
+
+      <!-- Badge -->
+      <span 
+        class="badge bg-danger position-absolute top-0 start-100 translate-middle"
+        *ngIf="(notificacoes$ | async) as n"
+        [hidden]="n === 0">
+        {{ n }}
+      </span>
+    </div>
+
+    <!-- Avatar com nome -->
+    <span class="fw-semibold">{{ auth.usuarioAtual?.nome_completo }}</span>
+
+    <button class="btn btn-outline-danger btn-sm" (click)="logout()">Sair</button>
+  </div>
+</nav>
+
+<!-- resto da página -->
+<router-outlet></router-outlet>
