@@ -27,7 +27,8 @@ import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-cha
     Dashboard,
     Header,
     FilaChamados,
-    DetalheChamadoUser
+    DetalheChamadoUser,
+    Secure
     
   ],
   imports: [

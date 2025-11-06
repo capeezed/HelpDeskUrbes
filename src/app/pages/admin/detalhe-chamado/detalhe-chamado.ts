@@ -7,7 +7,8 @@ import { AuthService } from '../../../services/auth.service';
 import { ComentariosService } from '../../../services/comentarios';
 import { CommonModule } from '@angular/common'; 
 import { RouterModule } from '@angular/router'; 
-import { FormsModule } from '@angular/forms'; 
+import { FormsModule } from '@angular/forms';
+import { RelatorioService, RelatorioChamado } from '../../../services/relatorio';
 
 @Component({
   selector: 'app-detalhe-chamado',
@@ -32,13 +33,20 @@ export class DetalheChamado implements OnInit {
   mensagemErro = '';
   mensagemAcao = '';
 
+  relatorio: RelatorioChamado | null = null;
+  relTitulo = '';
+  relTexto = '';
+  salvandoRelatorio = false;
+
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private chamadoService: ChamadoService,
     private dadosGeraisService: DadosGerais,
     public authService: AuthService,
-    private comentariosService: ComentariosService
+    private comentariosService: ComentariosService,
+    private relatorioService: RelatorioService
   ) {}
 
   ngOnInit(): void {
@@ -47,25 +55,64 @@ export class DetalheChamado implements OnInit {
     this.carregarComentarios();
   }
 
+  private getIdDaRota(): number | null {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    return idParam ? Number(idParam) : null;
+  }
+
   carregarChamado(): void {
     this.chamado$ = this.route.paramMap.pipe(
       switchMap(params => {
-        const id = params.get('id');
+        const id = Number(params.get('id'));
         if (!id) {
           this.mensagemErro = 'ID do chamado não fornecido.';
           return of(null);
         }
-        return this.chamadoService.getChamadoById(+id).pipe(
+        // ao carregar o chamado, também tenta carregar relatório
+        this.carregarRelatorio(id);
+        return this.chamadoService.getChamadoById(id).pipe(
           tap(chamado => {
-            this.tecnicoSelecionadoId = chamado?.atribuido_para_id || null;
+            if (chamado && chamado.atribuido_para_id) {
+              this.tecnicoSelecionadoId = chamado.atribuido_para_id;
+            } else {
+              this.tecnicoSelecionadoId = null;
+            }
           }),
           catchError(err => {
-            this.mensagemErro = `Erro ao buscar chamado: ${err.error.message || err.message}`;
+            this.mensagemErro = `Erro ao buscar chamado: ${err.error?.message || err.message}`;
             return of(null);
           })
         );
       })
     );
+  }
+
+  carregarRelatorio(chamadoId: number): void {
+    this.relatorioService.obter(chamadoId).subscribe({
+      next: (r) => this.relatorio = r,
+      error: () => this.relatorio = null
+    });
+  }
+
+  salvarRelatorio(chamadoId: number): void {
+    if (!this.relTitulo.trim() || !this.relTexto.trim()) {
+      alert('Informe título e relatório.');
+      return;
+    }
+    this.salvandoRelatorio = true;
+    this.relatorioService.criar(chamadoId, this.relTitulo.trim(), this.relTexto.trim()).subscribe({
+      next: (r) => {
+        this.relatorio = r;
+        this.relTitulo = '';
+        this.relTexto = '';
+        this.salvandoRelatorio = false;
+        this.mensagemAcao = 'Relatório salvo com sucesso!';
+      },
+      error: (err) => {
+        this.salvandoRelatorio = false;
+        alert(err?.error?.message || 'Erro ao salvar relatório');
+      }
+    });
   }
 
   carregarTecnicos(): void {

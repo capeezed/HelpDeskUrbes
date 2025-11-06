@@ -1,28 +1,25 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm px-3">
+<app-header></app-header>
 
-  <a class="navbar-brand fw-bold text-green-primary">HelpDesk Urbes</a>
+<!-- Dropdown -->
+<ul class="dropdown-menu dropdown-menu-end notif-menu">
+  <li class="dropdown-header fw-bold">Notificações</li>
 
-  <div class="ms-auto d-flex align-items-center gap-3">
+  <!-- Listagem -->
+  <li *ngFor="let n of (notify.notificacoes$ | async)"
+      class="dropdown-item d-flex justify-content-between align-items-center"
+      [class.unread]="!n.lida">
+      <span>{{ n.texto }}</span>
+      <small class="text-muted">{{ n.tempo }}</small>
+  </li>
 
-    <!-- 🔔 Ícone de notificações -->
-    <div class="position-relative me-3" style="cursor: pointer;" (click)="abrirNotificacoes()">
-      <i class="bi bi-bell fs-4"></i>
+  <!-- Divisor -->
+  <li><hr class="dropdown-divider"></li>
 
-      <!-- Badge -->
-      <span 
-        class="badge bg-danger position-absolute top-0 start-100 translate-middle"
-        *ngIf="(notificacoes$ | async) as n"
-        [hidden]="n === 0">
-        {{ n }}
-      </span>
-    </div>
-
-    <!-- Avatar com nome -->
-    <span class="fw-semibold">{{ auth.usuarioAtual?.nome_completo }}</span>
-
-    <button class="btn btn-outline-danger btn-sm" (click)="logout()">Sair</button>
-  </div>
-</nav>
-
-<!-- resto da página -->
+  <!-- Botão limpar -->
+  <li class="text-center">
+    <button class="btn btn-sm btn-outline-secondary" (click)="notify.limparTodas()">
+      Limpar tudo
+    </button>
+  </li>
+</ul>
 <router-outlet></router-outlet>

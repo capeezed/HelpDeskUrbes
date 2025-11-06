@@ -135,8 +135,46 @@
           <p *ngIf="mensagemAcao" class="alert alert-success text-center mt-3">{{ mensagemAcao }}</p>
         </div>
       </div>
-    </div>
 
+      <!-- ===================== RELATÓRIO FINAL ===================== -->
+      <div class="card shadow-sm mt-3" *ngIf="chamado.status === 'fechado'">
+        <div class="card-header">
+          <h5 class="mb-0">Relatório Final</h5>
+        </div>
+
+        <div class="card-body">
+
+          <!-- Se já existir relatório -->
+          <div *ngIf="relatorio; else criarRelatorio">
+            <h6 class="mb-1">{{ relatorio.titulo }}</h6>
+            <p class="bg-light p-3 rounded" style="white-space: pre-wrap;">{{ relatorio.relatorio }}</p>
+            <small class="text-muted">
+              Por {{ relatorio.tecnico_nome }} em {{ relatorio.criado_em | date:'dd/MM/yyyy HH:mm' }}
+            </small>
+          </div>
+
+          <!-- Se não existir → formulário -->
+          <ng-template #criarRelatorio>
+            <label class="form-label">Título</label>
+            <input type="text" class="form-control mb-2" [(ngModel)]="relTitulo">
+
+            <label class="form-label">Relatório</label>
+            <textarea class="form-control mb-2" rows="4" [(ngModel)]="relTexto"
+              placeholder="Descreva o diagnóstico, solução aplicada e resultado..."></textarea>
+
+            <button class="btn btn-success w-100"
+              [disabled]="salvandoRelatorio || !relTitulo.trim() || !relTexto.trim()"
+              (click)="salvarRelatorio(chamado.id)">
+              <span *ngIf="!salvandoRelatorio">Salvar Relatório</span>
+              <span *ngIf="salvandoRelatorio" class="spinner-border spinner-border-sm"></span>
+            </button>
+          </ng-template>
+
+        </div>
+      </div>
+      <!-- ===================== FIM RELATÓRIO ===================== -->
+
+    </div>
   </div>
 </div>
 

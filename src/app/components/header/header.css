@@ -1,0 +1,27 @@
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 0.7rem;
+}
+
+.notif-menu {
+  width: 320px;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.notif-item a {
+  text-decoration: none;
+  color: #333;
+  display: block;
+}
+
+.notif-item.unread {
+  background: #e9f2ff;
+  font-weight: 600;
+}
+
+.notif-text {
+  font-size: 0.9rem;
+}
