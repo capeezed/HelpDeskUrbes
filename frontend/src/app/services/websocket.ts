@@ -8,7 +8,9 @@ import { AuthService } from './auth.service';
 export class WebsocketService {
 
   private socket!: Socket;
-  private readonly url = 'http://localhost:3000';
+  private readonly url = `http://${window.location.hostname}:3000`;
+
+
 
   constructor(private authService: AuthService) {}
 
@@ -44,4 +46,9 @@ export class WebsocketService {
   onNovoComentario(callback: (data: any) => void) {
     this.socket.on('novo-comentario', callback);
   }
+
+  offNovoComentario(callback: (data: any) => void) {
+  if (!this.socket) return;
+  this.socket.off('novo-comentario', callback);
+}
 }

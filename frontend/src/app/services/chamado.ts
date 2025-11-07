@@ -4,7 +4,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
+import { environment } from '../../environments/environment.prod';
 import { AuthService } from './auth.service';
 
 // Interface (COMPLETA E CORRIGIDA)

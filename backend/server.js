@@ -1,5 +1,3 @@
-// backend/server.js
-
 // ======================== IMPORTS =========================
 const express = require('express');
 const cors = require('cors');
@@ -20,7 +18,7 @@ const server = http.createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(server, {
   cors: {
-    origin: true, // libera qualquer origem (IP/localhost/domínio)
+    origin: '*', // libera qualquer origem (IP/localhost/domínio)
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -30,12 +28,25 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 
 // ======================== MIDDLEWARES ======================
+// CORS genérico
 app.use(cors({
-  origin: true, // libera tudo
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Preflight sem usar app.options('*', ...) (evita PathToRegexp error)
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -202,7 +213,8 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
     let anexo_url = null;
 
     if (req.file) {
-      anexo_url = `http://${req.hostname}:${PORT}/uploads/${req.file.filename}`;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      anexo_url = `${baseUrl}/uploads/${req.file.filename}`;
     }
 
     const sql = `
@@ -593,16 +605,12 @@ app.post('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
   }
 });
 
-// ======================== CATCH-ALL (APENAS PROD) =========
-// Se você NÃO copia o build Angular para /public, isso vai logar erro 404.
-// Pode remover este bloco em dev se quiser.
+// ======================== CATCH-ALL (PROD) =================
+// Se não houver SPA buildada em /public, retornará 404 JSON (ok em dev)
 app.use((req, res) => {
   const indexPath = path.join(__dirname, 'public/index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
-      // Em dev geralmente esse arquivo não existe.
-      // Não é erro da API, só não há SPA para servir.
-      // Logar como info:
       console.info('SPA não encontrada para servir (ok em dev):', err?.message);
       res.status(404).json({ message: 'Rota não encontrada.' });
     }

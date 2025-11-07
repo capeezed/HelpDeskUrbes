@@ -1,43 +1,28 @@
-.descricao {
-  white-space: pre-wrap;
-  background: #f8f9fa;
-  padding: 10px;
-  border-radius: 6px;
-}
-
 .chat-box {
-  max-height: 350px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
 .msg {
-  padding: 8px 12px;
-  background: #efefef;
+  background: #f1f1f1;
+  padding: 8px 10px;
   border-radius: 6px;
   margin-bottom: 8px;
-  width: fit-content;
-  max-width: 90%;
 }
 
 .msg.meu {
   background: #d1ffd1;
-  margin-left: auto;
+  border-left: 4px solid #28a745;
 }
 
 .msg .autor {
   font-weight: bold;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .msg .data {
   font-size: 11px;
   color: gray;
-}
-
-.status-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
+  text-align: right;
+  margin-top: 4px;
 }

@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, of, switchMap, catchError } from 'rxjs';
+import { Observable, switchMap, of, catchError } from 'rxjs';
 import { Chamado, ChamadoService } from '../../../services/chamado';
 import { ComentariosService } from '../../../services/comentarios';
 import { AuthService } from '../../../services/auth.service';
+import { WebsocketService } from '../../../services/websocket';
 
 @Component({
   selector: 'app-detalhe-chamado-user',
@@ -11,67 +12,94 @@ import { AuthService } from '../../../services/auth.service';
   templateUrl: './detalhe-chamado-user.html',
   styleUrls: ['./detalhe-chamado-user.css']
 })
-export class DetalheChamadoUser implements OnInit {
+export class DetalheChamadoUser implements OnInit, OnDestroy {
 
+  chamadoId!: number;
   chamado$!: Observable<Chamado | null>;
   comentarios: any[] = [];
   novoComentario: string = '';
-  mensagemErro = '';
   isLoadingComentario = false;
+  mensagemErro = '';
+
+  @ViewChild('mensagensContainer') mensagensContainer!: ElementRef<HTMLDivElement>;
+
+  // handler de realtime
+  private novoComentarioHandler = (payload: any) => {
+    if (Number(payload?.chamadoId) !== this.chamadoId) return;
+
+    this.comentarios.push({
+      texto: payload.texto,
+      autor: payload.autor,
+      autor_nivel: payload.autor_nivel,
+      criado_em: payload.criado_em
+    });
+
+    queueMicrotask(() => this.scrollToBottom());
+  };
 
   constructor(
     private route: ActivatedRoute,
     private chamadoService: ChamadoService,
     private comentariosService: ComentariosService,
-    public authService: AuthService
+    public authService: AuthService,
+    private ws: WebsocketService
   ) {}
 
   ngOnInit(): void {
+    this.chamadoId = Number(this.route.snapshot.paramMap.get('id'));
+
     this.carregarChamado();
-    this.carregarComentarios();
+    this.carregarComentarios(true); // true = já scrolla ao abrir
+    this.ws.onNovoComentario(this.novoComentarioHandler);
+  }
+
+  ngOnDestroy(): void {
+    this.ws.offNovoComentario(this.novoComentarioHandler);
+  }
+
+  scrollToBottom() {
+    const box = this.mensagensContainer?.nativeElement;
+    if (box) box.scrollTop = box.scrollHeight;
   }
 
   carregarChamado(): void {
     this.chamado$ = this.route.paramMap.pipe(
       switchMap(params => {
-        const id = params.get('id');
+        const id = Number(params.get('id'));
         if (!id) return of(null);
-        return this.chamadoService.getChamadoById(+id);
+        return this.chamadoService.getChamadoById(id);
       }),
-      catchError(err => {
+      catchError(() => {
         this.mensagemErro = 'Erro ao carregar chamado.';
         return of(null);
       })
     );
   }
 
-  carregarComentarios(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) return;
-
-    this.comentariosService.getComentarios(+id).subscribe({
-      next: (res) => (this.comentarios = res),
-      error: () => (this.mensagemErro = 'Erro ao carregar comentários.')
+  carregarComentarios(scroll = false): void {
+    this.comentariosService.getComentarios(this.chamadoId).subscribe({
+      next: (res) => {
+        this.comentarios = res;
+        if (scroll) queueMicrotask(() => this.scrollToBottom());
+      },
+      error: () => this.mensagemErro = 'Erro ao carregar comentários.'
     });
   }
 
   enviarComentario(): void {
     if (!this.novoComentario.trim()) return;
 
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) return;
-
     this.isLoadingComentario = true;
 
-    this.comentariosService.enviarComentario(+id, this.novoComentario).subscribe({
+    this.comentariosService.enviarComentario(this.chamadoId, this.novoComentario).subscribe({
       next: () => {
         this.novoComentario = '';
         this.isLoadingComentario = false;
-        this.carregarComentarios();
+        // não precisa recarregar porque o realtime entra automático
       },
       error: () => {
         this.isLoadingComentario = false;
-        alert('Erro ao enviar comentário');
+        alert('Erro ao enviar comentário.');
       }
     });
   }

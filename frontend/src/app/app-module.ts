@@ -26,8 +26,9 @@ import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-cha
     Cadastro,
     Dashboard,
     Header,
-    FilaChamados,
+    DetalheChamado,
     DetalheChamadoUser,
+    FilaChamados,
     Secure
     
   ],
@@ -39,7 +40,7 @@ import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-cha
     NgbModule,
     HttpClientModule,
     NovoChamado,
-    DetalheChamado,
+    
     ToastrModule.forRoot({
       positionClass: 'toast-bottom-right',
       timeOut: 5000,

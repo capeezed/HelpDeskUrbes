@@ -1,31 +1,32 @@
 <div class="container mt-4" *ngIf="chamado$ | async as chamado; else carregando">
 
+  <!-- Voltar -->
   <a routerLink="/dashboard" class="btn btn-outline-secondary mb-3">
     &larr; Voltar
   </a>
 
+  <!-- CARD DETALHES DO CHAMADO -->
   <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between">
-      <h4>{{ chamado.titulo }}</h4>
-      <span class="badge bg-info text-dark status-badge">
-        {{ chamado.status | titlecase }}
-      </span>
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">{{ chamado.titulo }}</h4>
+      <span class="badge bg-info text-dark fs-6">{{ chamado.status | titlecase }}</span>
     </div>
 
     <div class="card-body">
-      <p class="descricao">{{ chamado.descricao }}</p>
+      <h6>Descrição:</h6>
+      <p class="descricao bg-light p-2 rounded">{{ chamado.descricao }}</p>
 
       <div *ngIf="chamado.anexo_url" class="mt-3">
         <h6>Anexo:</h6>
         <a [href]="chamado.anexo_url" target="_blank">
-          <img [src]="chamado.anexo_url" class="img-fluid rounded border">
+          <img [src]="chamado.anexo_url" class="img-fluid rounded border" alt="Anexo do chamado">
         </a>
       </div>
 
       <hr>
 
       <p><strong>Atribuído a:</strong>
-        {{ chamado.tecnico_atribuido_nome || 'Aguardando técnico' }}
+        {{ chamado.tecnico_atribuido_nome || 'Aguardando técnico...' }}
       </p>
 
       <p><strong>Aberto em:</strong>
@@ -37,15 +38,17 @@
   <!-- CHAT -->
   <div class="card mt-4 shadow-sm">
     <div class="card-header">
-      <h5>Comentários</h5>
+      <h5 class="mb-0">Comentários</h5>
     </div>
 
-    <div class="card-body chat-box">
+    <div class="card-body chat-box" #mensagensContainer id="comentarios-box">
 
+      <!-- Sem comentários -->
       <div *ngIf="comentarios.length === 0" class="text-muted">
         Nenhum comentário ainda.
       </div>
 
+      <!-- Lista dos comentários -->
       <div *ngFor="let c of comentarios" class="msg" 
            [ngClass]="{ 'meu': isMeuComentario(c.autor) }">
 
@@ -54,19 +57,24 @@
         <div class="data">{{ c.criado_em | date:'dd/MM/yyyy HH:mm' }}</div>
       </div>
 
-      <textarea class="form-control mt-3" [(ngModel)]="novoComentario" rows="3"
+      <!-- Campo de envio -->
+      <textarea class="form-control mt-3"
+                [(ngModel)]="novoComentario"
+                rows="3"
                 placeholder="Escreva um comentário..."></textarea>
 
       <button class="btn btn-success mt-2 w-100"
               (click)="enviarComentario()"
-              [disabled]="isLoadingComentario">
-        {{ isLoadingComentario ? 'Enviando...' : 'Enviar' }}
+              [disabled]="isLoadingComentario || !novoComentario.trim()">
+        <span *ngIf="!isLoadingComentario">Enviar</span>
+        <span *ngIf="isLoadingComentario" class="spinner-border spinner-border-sm"></span>
       </button>
 
     </div>
   </div>
 </div>
 
+<!-- LOADING TEMPLATE -->
 <ng-template #carregando>
   <div class="text-center mt-5">
     <div class="spinner-border"></div>

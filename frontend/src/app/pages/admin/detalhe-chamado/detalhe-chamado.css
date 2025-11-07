@@ -60,3 +60,16 @@
 .enviar-box button {
   padding: 8px 18px;
 }
+
+.comentarios-lista {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.meu-comentario {
+  background: #e0f5ff;
+  border-left: 4px solid #0099cc;
+}
+
+.mensagens { max-height: 50vh; overflow-y: auto; }
