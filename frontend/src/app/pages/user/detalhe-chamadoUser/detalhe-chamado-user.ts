@@ -88,15 +88,22 @@ export class DetalheChamadoUser implements OnInit, OnDestroy {
     );
   }
 
-  carregarComentarios(scroll = false): void {
-    this.comentariosService.getComentarios(this.chamadoId).subscribe({
+  carregarComentarios(): void {
+  console.log('🌀 Carregando comentários para', this.chamadoId);
+  this.comentariosService.getComentarios(this.chamadoId)
+    .subscribe({
       next: (res) => {
+        console.log('✅ Comentários recebidos:', res);
         this.comentarios = res;
-        if (scroll) queueMicrotask(() => this.scrollToBottom());
+        queueMicrotask(() => this.scrollToBottom());
       },
-      error: () => this.mensagemErro = 'Erro ao carregar comentários.'
+      error: (err) => {
+        console.error('❌ Erro ao carregar comentários:', err);
+        this.mensagemErro = 'Erro ao carregar comentários.';
+      }
     });
-  }
+}
+
 
   enviarComentario(): void {
     if (!this.novoComentario.trim()) return;

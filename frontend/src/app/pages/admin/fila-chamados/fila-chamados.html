@@ -10,7 +10,8 @@
     BLOCO DE FILTROS (NOVO)
     (filtroAtual$ | async) nos diz qual botão deve ficar 'ativo'
   -->
-  <div class="mb-3" *ngIf="filtroAtual$ | async as filtro">
+  <div class="mb-3">
+  <ng-container *ngIf="filtroAtual$ | async as filtro">
     <div class="btn-group" role="group" aria-label="Filtro de Status">
       <button 
         type="button" 
@@ -36,7 +37,7 @@
         (click)="mudarFiltro('fechado')">
         Fechados
       </button>
-       <button 
+      <button 
         type="button" 
         class="btn"
         [class.btn-primary]="filtro === ''"
@@ -45,7 +46,8 @@
         Todos
       </button>
     </div>
-  </div>
+  </ng-container>
+</div>
   <!-- 
     Usamos o 'chamados$' (do nosso .ts)
     e o 'async' pipe para mostrar os dados.

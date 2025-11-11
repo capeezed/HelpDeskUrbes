@@ -111,12 +111,21 @@ export class DetalheChamado implements OnInit, OnDestroy {
   }
 
   carregarComentarios(): void {
-    this.comentariosService.getComentarios(this.chamadoId)
-      .subscribe(res => {
+  console.log('🌀 Carregando comentários para', this.chamadoId);
+  this.comentariosService.getComentarios(this.chamadoId)
+    .subscribe({
+      next: (res) => {
+        console.log('✅ Comentários recebidos:', res);
         this.comentarios = res;
         queueMicrotask(() => this.scrollToBottom());
-      });
-  }
+      },
+      error: (err) => {
+        console.error('❌ Erro ao carregar comentários:', err);
+        this.mensagemErro = 'Erro ao carregar comentários.';
+      }
+    });
+}
+
 
   enviarComentario(): void {
     if (!this.novoComentario.trim()) return;

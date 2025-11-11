@@ -67,10 +67,19 @@ io.on('connection', (socket) => {
   console.log('✅ WebSocket conectado:', socket.id);
 
   socket.on('registrarUsuario', (userId) => {
-    if (!userId) return;
-    clientesConectados.set(Number(userId), socket.id);
-    console.log(`🔗 userId ${userId} associado ao socket ${socket.id}`);
-  });
+  if (!userId) return;
+
+  // Remove sockets anteriores do mesmo usuário
+  for (const [uid, sid] of clientesConectados.entries()) {
+    if (uid === Number(userId) && sid !== socket.id) {
+      clientesConectados.delete(uid);
+      console.log(`♻️ Substituindo conexão antiga do userId ${userId}`);
+    }
+  }
+
+  clientesConectados.set(Number(userId), socket.id);
+  console.log(`🔗 userId ${userId} associado ao socket ${socket.id}`);
+});
 
   socket.on('disconnect', () => {
     for (const [userId, sockId] of clientesConectados.entries()) {
@@ -519,6 +528,41 @@ app.post('/api/login', async (req, res) => {
  * - Funcionário pode ver comentários dos seus chamados
  * - Técnico/Admin podem ver de qualquer chamado
  */
+// GET /api/chamados/:id/comentarios
+// Lista comentários do chamado
+app.get('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
+  const chamadoId = Number(req.params.id);
+  const usuario = req.usuario;
+
+  try {
+    // Funcionário só pode ver se o chamado é dele
+    if (usuario.nivel === 'funcionario') {
+      const [[own]] = await pool.query(
+        'SELECT 1 FROM chamados WHERE id = ? AND criado_por_id = ? LIMIT 1',
+        [chamadoId, usuario.id]
+      );
+      if (!own) return res.status(403).json({ message: 'Acesso negado.' });
+    }
+
+    const [rows] = await pool.query(
+      `SELECT c.id, c.texto, c.criado_em,
+              p.nome_completo AS autor, p.nivel AS autor_nivel
+       FROM comentarios c
+       JOIN perfis p ON c.usuario_id = p.id
+       WHERE c.chamado_id = ?
+       ORDER BY c.criado_em ASC`,
+      [chamadoId]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar comentários:', err);
+    res.status(500).json({ message: 'Erro ao buscar comentários' });
+  }
+});
+
+// POST /api/chamados/:id/comentarios
+// Cria comentário e emite via WebSocket
 app.post('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
   const chamadoId = Number(req.params.id);
   const usuario = req.usuario;
@@ -529,7 +573,7 @@ app.post('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
   }
 
   try {
-    // Verifica se o usuário tem permissão pra comentar
+    // Funcionário só comenta no que é dele
     if (usuario.nivel === 'funcionario') {
       const [[own]] = await pool.query(
         'SELECT 1 FROM chamados WHERE id = ? AND criado_por_id = ? LIMIT 1',
@@ -538,15 +582,14 @@ app.post('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
       if (!own) return res.status(403).json({ message: 'Acesso negado.' });
     }
 
-    // Salva o comentário
     await pool.query(
       'INSERT INTO comentarios (chamado_id, usuario_id, texto) VALUES (?, ?, ?)',
       [chamadoId, usuario.id, texto.trim()]
     );
 
-    // Busca os dados completos para emitir via WebSocket
     const [[comentario]] = await pool.query(
-      `SELECT c.id, c.texto, c.criado_em, p.nome_completo AS autor, p.nivel AS autor_nivel
+      `SELECT c.id, c.texto, c.criado_em,
+              p.nome_completo AS autor, p.nivel AS autor_nivel
        FROM comentarios c
        JOIN perfis p ON c.usuario_id = p.id
        WHERE c.chamado_id = ?
@@ -555,14 +598,30 @@ app.post('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
       [chamadoId]
     );
 
-    // Envia o comentário em tempo real
-    io.emit('novo-comentario', {
+    // Descobre envolvidos para notificar
+    const [[env]] = await pool.query(
+      'SELECT criado_por_id, atribuido_para_id FROM chamados WHERE id = ?',
+      [chamadoId]
+    );
+
+    const payload = {
       chamadoId,
       texto: comentario.texto,
       autor: comentario.autor,
       autor_nivel: comentario.autor_nivel,
       criado_em: comentario.criado_em
-    });
+    };
+
+    // Emite somente para quem importa (criador e técnico)
+    // Emite somente para quem importa (criador e técnico)
+    if (env?.criado_por_id) {
+      console.log(`📤 Enviando comentário para criador ID ${env.criado_por_id}`);
+      enviarParaUsuario(env.criado_por_id, 'novo-comentario', payload);
+    }
+    if (env?.atribuido_para_id) {
+      console.log(`📤 Enviando comentário para técnico ID ${env.atribuido_para_id}`);
+      enviarParaUsuario(env.atribuido_para_id, 'novo-comentario', payload);
+    }
 
     res.status(201).json(comentario);
   } catch (err) {
