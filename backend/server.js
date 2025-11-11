@@ -519,12 +519,17 @@ app.post('/api/login', async (req, res) => {
  * - Funcionário pode ver comentários dos seus chamados
  * - Técnico/Admin podem ver de qualquer chamado
  */
-app.get('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
+app.post('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
   const chamadoId = Number(req.params.id);
   const usuario = req.usuario;
+  const { texto } = req.body;
+
+  if (!texto?.trim()) {
+    return res.status(400).json({ message: 'Comentário não pode estar vazio.' });
+  }
 
   try {
-    // Segurança: impede funcionário de ver comentários de chamado alheio
+    // Verifica se o usuário tem permissão pra comentar
     if (usuario.nivel === 'funcionario') {
       const [[own]] = await pool.query(
         'SELECT 1 FROM chamados WHERE id = ? AND criado_por_id = ? LIMIT 1',
@@ -533,18 +538,36 @@ app.get('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
       if (!own) return res.status(403).json({ message: 'Acesso negado.' });
     }
 
-    const sql = `
-      SELECT c.id, c.texto, c.criado_em, p.nome_completo AS autor, p.nivel AS autor_nivel
-      FROM comentarios c
-      JOIN perfis p ON c.usuario_id = p.id
-      WHERE c.chamado_id = ?
-      ORDER BY c.criado_em ASC
-    `;
-    const [rows] = await pool.query(sql, [chamadoId]);
-    res.json(rows);
+    // Salva o comentário
+    await pool.query(
+      'INSERT INTO comentarios (chamado_id, usuario_id, texto) VALUES (?, ?, ?)',
+      [chamadoId, usuario.id, texto.trim()]
+    );
+
+    // Busca os dados completos para emitir via WebSocket
+    const [[comentario]] = await pool.query(
+      `SELECT c.id, c.texto, c.criado_em, p.nome_completo AS autor, p.nivel AS autor_nivel
+       FROM comentarios c
+       JOIN perfis p ON c.usuario_id = p.id
+       WHERE c.chamado_id = ?
+       ORDER BY c.id DESC
+       LIMIT 1`,
+      [chamadoId]
+    );
+
+    // Envia o comentário em tempo real
+    io.emit('novo-comentario', {
+      chamadoId,
+      texto: comentario.texto,
+      autor: comentario.autor,
+      autor_nivel: comentario.autor_nivel,
+      criado_em: comentario.criado_em
+    });
+
+    res.status(201).json(comentario);
   } catch (err) {
-    console.error('Erro ao buscar comentários:', err);
-    res.status(500).json({ message: 'Erro ao buscar comentários' });
+    console.error('Erro ao salvar comentário:', err);
+    res.status(500).json({ message: 'Erro ao salvar comentário.' });
   }
 });
 
@@ -554,56 +577,7 @@ app.get('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
  * - Técnico/Admin podem comentar em qualquer
  * - Notifica criador e técnico
  */
-app.post('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
-  const chamadoId = Number(req.params.id);
-  const usuarioId = req.usuario.id;
-  const { texto } = req.body;
 
-  if (!texto || texto.trim() === '') {
-    return res.status(400).json({ message: 'O comentário não pode estar vazio.' });
-  }
-
-  try {
-    if (req.usuario.nivel === 'funcionario') {
-      const [[own]] = await pool.query(
-        'SELECT 1 FROM chamados WHERE id = ? AND criado_por_id = ? LIMIT 1',
-        [chamadoId, usuarioId]
-      );
-      if (!own) return res.status(403).json({ message: 'Acesso negado.' });
-    }
-
-    await pool.query(
-      `INSERT INTO comentarios (texto, chamado_id, usuario_id) VALUES (?, ?, ?)`,
-      [texto.trim(), chamadoId, usuarioId]
-    );
-
-    const [[autor]] = await pool.query(
-      'SELECT nome_completo AS autor, nivel AS autor_nivel FROM perfis WHERE id = ?',
-      [usuarioId]
-    );
-
-    const [[env]] = await pool.query(
-      'SELECT criado_por_id, atribuido_para_id FROM chamados WHERE id = ?',
-      [chamadoId]
-    );
-
-    const payload = {
-      chamadoId,
-      texto: texto.trim(),
-      autor: autor?.autor || 'Usuário',
-      autor_nivel: autor?.autor_nivel || 'funcionario',
-      criado_em: new Date()
-    };
-
-    if (env?.criado_por_id) enviarParaUsuario(env.criado_por_id, 'novo-comentario', payload);
-    if (env?.atribuido_para_id) enviarParaUsuario(env.atribuido_para_id, 'novo-comentario', payload);
-
-    res.status(201).json({ message: 'Comentário adicionado com sucesso!' });
-  } catch (err) {
-    console.error('Erro ao salvar comentário:', err);
-    res.status(500).json({ message: 'Erro ao salvar comentário' });
-  }
-});
 
 // ======================== CATCH-ALL (PROD) =================
 // Se não houver SPA buildada em /public, retornará 404 JSON (ok em dev)

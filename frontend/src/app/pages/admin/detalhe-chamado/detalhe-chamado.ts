@@ -60,14 +60,24 @@ export class DetalheChamado implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.chamadoId = Number(this.route.snapshot.paramMap.get('id'));
+  this.route.paramMap.subscribe(params => {
+    this.chamadoId = Number(params.get('id'));
+    if (!this.chamadoId) return;
 
+    // 🔹 carrega dados do chamado e os comentários do banco
     this.carregarChamado();
     this.carregarComentarios();
-    this.carregarTecnicos();
 
-    this.ws.onNovoComentario(this.novoComentarioHandler);
-  }
+    // 🔹 escuta novos comentários em tempo real (via WebSocket)
+    this.ws.onNovoComentario(data => {
+      if (data.chamadoId === this.chamadoId) {
+        this.comentarios.push(data);
+        this.scrollToBottom();
+      }
+    });
+  });
+}
+
 
   ngOnDestroy(): void {
     this.ws.offNovoComentario(this.novoComentarioHandler);

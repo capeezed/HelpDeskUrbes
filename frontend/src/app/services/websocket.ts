@@ -1,54 +1,82 @@
 import { Injectable } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { AuthService } from './auth.service';
+import { environment } from './../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WebsocketService {
+  private socket?: Socket;
+  private isConnecting = false;
+  private pendingCallbacks: (() => void)[] = [];
 
-  private socket!: Socket;
-  private readonly url = `http://${window.location.hostname}:3000`;
+  constructor(private auth: AuthService) {}
 
+  conectar(): Promise<void> {
+    return new Promise((resolve) => {
+      // Já conectado
+      if (this.socket && this.socket.connected) {
+        return resolve();
+      }
 
+      // Já tentando conectar — espera
+      if (this.isConnecting) {
+        this.pendingCallbacks.push(resolve);
+        return;
+      }
 
-  constructor(private authService: AuthService) {}
+      this.isConnecting = true;
 
-  conectar() {
-    const user = this.authService.usuarioAtual;
-    if (!user) return;
+      this.socket = io(environment.apiUrl.replace('/api', ''), {
+        transports: ['websocket'],
+        withCredentials: true
+      });
 
-    this.socket = io(this.url, {
-      transports: ['websocket']
+      this.socket.on('connect', () => {
+        console.log('✅ WebSocket conectado:', this.socket?.id);
+
+        const user = this.auth.usuarioAtual;
+        if (user) this.socket?.emit('registrarUsuario', user.id);
+
+        this.isConnecting = false;
+        this.pendingCallbacks.forEach(cb => cb());
+        this.pendingCallbacks = [];
+        resolve();
+      });
+
+      this.socket.on('disconnect', () => {
+        console.warn('⚠️ WebSocket desconectado');
+      });
     });
-
-    this.socket.on('connect', () => {
-      console.log('✅ Socket conectado:', this.socket.id);
-
-      // Registra usuário no backend
-      this.socket.emit('registrarUsuario', user.id);
-    });
   }
 
-  // --- Eventos recebidos ---
-  onNovoChamado(callback: (data: any) => void) {
-    this.socket.on('novo-chamado', callback);
+  async onNovoComentario(callback: (data: any) => void) {
+    if (!this.socket || !this.socket.connected) {
+      console.warn('⏳ Socket ainda não conectado. Tentando reconectar...');
+      await this.conectar();
+    }
+    this.socket?.on('novo-comentario', callback);
   }
 
-  onChamadoAtribuido(callback: (data: any) => void) {
-    this.socket.on('chamado-atribuido', callback);
+  offNovoComentario(callback?: (data: any) => void) {
+    if (!this.socket) return;
+    if (callback) this.socket.off('novo-comentario', callback);
+    else this.socket.off('novo-comentario');
   }
 
-  onStatusAlterado(callback: (data: any) => void) {
-    this.socket.on('status-alterado', callback);
+  async onChamadoAtribuido(callback: (data: any) => void) {
+    if (!this.socket || !this.socket.connected) await this.conectar();
+    this.socket?.on('chamado-atribuido', callback);
   }
 
-  onNovoComentario(callback: (data: any) => void) {
-    this.socket.on('novo-comentario', callback);
+  async onStatusAlterado(callback: (data: any) => void) {
+    if (!this.socket || !this.socket.connected) await this.conectar();
+    this.socket?.on('status-alterado', callback);
   }
 
-  offNovoComentario(callback: (data: any) => void) {
-  if (!this.socket) return;
-  this.socket.off('novo-comentario', callback);
-}
+  async onNovoChamado(callback: (data: any) => void) {
+    if (!this.socket || !this.socket.connected) await this.conectar();
+    this.socket?.on('novo-chamado', callback);
+  }
 }

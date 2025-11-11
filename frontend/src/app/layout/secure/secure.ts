@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { WebsocketService } from '../../services/websocket';
+import { WebsocketService } from './../../services/websocket';
 import { ToastrService } from 'ngx-toastr';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
