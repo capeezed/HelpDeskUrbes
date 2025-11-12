@@ -5,7 +5,6 @@ import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment.prod';
 import { jwtDecode } from 'jwt-decode';
 
-// Interface dos dados que vêm do token
 export interface User {
   id: number;
   email: string;
@@ -17,7 +16,6 @@ export interface User {
   exp: number;
 }
 
-// Payload do cadastro
 export interface CadastroData {
   email: string;
   pass: string;
@@ -36,70 +34,69 @@ export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
   public user$: Observable<User | null> = this.userSubject.asObservable();
 
+  // ✅ adicionamos isso
+  private usuarioCarregadoSubject = new BehaviorSubject<boolean>(false);
+  public usuarioCarregado$ = this.usuarioCarregadoSubject.asObservable();
+
   constructor(private http: HttpClient) {
     this.loadUserFromToken();
   }
 
-  /** Indica se o usuário é técnico ou admin */
-  public get ehTecnico(): boolean {
+  get ehTecnico(): boolean {
     const usuario = this.userSubject.value;
-    return usuario ? (usuario.nivel === 'tecnico' || usuario.nivel === 'admin') : false;
+    return usuario ? usuario.nivel === 'tecnico' || usuario.nivel === 'admin' : false;
   }
 
-  /** ✅ NOVO MÉTODO: retorna true se há token válido */
   estaLogado(): boolean {
     return this.userSubject.value !== null;
   }
 
-  /** Carrega usuário do token salvo */
   private loadUserFromToken() {
     const token = localStorage.getItem(this.TOKEN_KEY);
     if (token) {
       try {
-        const decodedUser = jwtDecode<User>(token);
-        if (decodedUser.exp * 1000 > Date.now()) {
-          this.userSubject.next(decodedUser);
+        const decoded = jwtDecode<User>(token);
+        if (decoded.exp * 1000 > Date.now()) {
+          this.userSubject.next(decoded);
         } else {
           localStorage.removeItem(this.TOKEN_KEY);
         }
-      } catch (error) {
-        console.error('Erro ao decodificar token:', error);
+      } catch {
         localStorage.removeItem(this.TOKEN_KEY);
       }
     }
+    // ✅ indica que o carregamento terminou
+    this.usuarioCarregadoSubject.next(true);
   }
 
-  /** Cadastro */
   cadastrarUsuario(dados: CadastroData): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, dados);
   }
 
-  /** Login */
   loginComEmail(email: string, pass: string): Observable<{ token: string }> {
     return this.http.post<{ token: string }>(`${this.apiUrl}/login`, { email, pass })
       .pipe(
-        tap(response => this.saveToken(response.token)),
+        tap(r => this.saveToken(r.token)),
         catchError(err => {
           this.userSubject.next(null);
+          this.usuarioCarregadoSubject.next(true);
           throw err;
         })
       );
   }
 
-  /** Salva token e atualiza estado */
   private saveToken(token: string) {
     localStorage.setItem(this.TOKEN_KEY, token);
-    const decodedUser = jwtDecode<User>(token);
-    this.userSubject.next(decodedUser);
+    const decoded = jwtDecode<User>(token);
+    this.userSubject.next(decoded);
+    this.usuarioCarregadoSubject.next(true);
   }
 
-  /** Logout */
   logout() {
     localStorage.removeItem(this.TOKEN_KEY);
     this.userSubject.next(null);
   }
 
-  /** Retorna o usuário atual sincronamente */
   get usuarioAtual(): User | null {
     return this.userSubject.value;
   }

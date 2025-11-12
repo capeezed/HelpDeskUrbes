@@ -1,9 +1,9 @@
 // src/app/pages/admin/fila-chamados/fila-chamados.component.ts
 
-import { Component, OnInit } from '@angular/core';
-// 1. IMPORTS ADICIONAIS DO RxJS
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable, BehaviorSubject, switchMap, tap } from 'rxjs';
 import { Chamado, ChamadoService } from '../../../services/chamado';
+import { WebsocketService } from '../../../services/websocket';
 
 @Component({
   selector: 'app-fila-chamados',
@@ -11,44 +11,51 @@ import { Chamado, ChamadoService } from '../../../services/chamado';
   templateUrl: './fila-chamados.html',
   styleUrls: ['./fila-chamados.css']
 })
-export class FilaChamados implements OnInit {
+export class FilaChamados implements OnInit, OnDestroy {
 
   chamados$!: Observable<Chamado[]>;
   
-  // 2. BehaviorSubject para guardar o filtro atual.
-  // Começa mostrando apenas chamados 'aberto'
   private filtroSubject = new BehaviorSubject<string>('aberto');
-  
-  // 3. Observable público para o HTML saber qual botão está ativo
   filtroAtual$: Observable<string> = this.filtroSubject.asObservable();
 
-  constructor(private chamadoService: ChamadoService) { }
+  // Handler para remoção correta do listener
+  private novoChamadoHandler = (data: any) => {
+    console.log('🆕 Novo chamado recebido via WebSocket:', data);
+    // Recarrega a lista forçando nova busca com o filtro atual
+    this.filtroSubject.next(this.filtroSubject.value);
+  };
 
-  ngOnInit(): void {
-    // 4. LÓGICA DE RECARGA AUTOMÁTICA
-    // 'chamados$' agora "ouve" o 'filtroSubject'.
-    // Sempre que o filtroSubject mudar (com .next()),
-    // o 'switchMap' cancela a chamada antiga e faz uma nova.
+  constructor(
+    private chamadoService: ChamadoService,
+    private ws: WebsocketService
+  ) { }
+
+  async ngOnInit(): Promise<void> {
+    // Garante que o WebSocket está conectado
+    await this.ws.conectar();
+
+    // Configura a lógica de recarga automática baseada no filtro
     this.chamados$ = this.filtroSubject.pipe(
       tap(filtro => console.log(`Buscando chamados com filtro: [${filtro}]`)),
       switchMap(statusFiltrado => {
-        // Chama o nosso serviço atualizado com o filtro
-        // (Se statusFiltrado for '', o serviço busca todos)
         return this.chamadoService.getMeusChamados(statusFiltrado);
       })
     );
+
+    // Escuta novos chamados via WebSocket e recarrega automaticamente
+    this.ws.offNovoChamado(this.novoChamadoHandler); // Remove listener antigo
+    this.ws.onNovoChamado(this.novoChamadoHandler);   // Adiciona listener
   }
 
-  /**
-   * 5. Função chamada pelos botões no HTML
-   */
+  ngOnDestroy(): void {
+    // Remove listener ao destruir componente
+    this.ws.offNovoChamado(this.novoChamadoHandler);
+  }
+
   mudarFiltro(novoStatus: string): void {
-    // Emite o novo valor para o 'filtroSubject',
-    // o que faz o 'switchMap' acima disparar automaticamente
     this.filtroSubject.next(novoStatus);
   }
 
-  // 6. A função getStatusClass continua igual
   getStatusClass(status: string | undefined) {
     switch (status) {
       case 'aberto': return 'bg-success text-white';

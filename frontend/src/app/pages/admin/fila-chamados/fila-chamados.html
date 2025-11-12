@@ -3,55 +3,47 @@
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="text-green-primary">Fila de Atendimento - TI</h1>
-    <!-- Aqui podemos adicionar filtros no futuro (ex: Abertos, Fechados) -->
   </div>
 
-  <!-- 
-    BLOCO DE FILTROS (NOVO)
-    (filtroAtual$ | async) nos diz qual botão deve ficar 'ativo'
-  -->
+  <!-- BLOCO DE FILTROS (CORRIGIDO) -->
   <div class="mb-3">
-  <ng-container *ngIf="filtroAtual$ | async as filtro">
     <div class="btn-group" role="group" aria-label="Filtro de Status">
       <button 
         type="button" 
         class="btn"
-        [class.btn-primary]="filtro === 'aberto'"
-        [class.btn-outline-primary]="filtro !== 'aberto'"
+        [class.btn-primary]="(filtroAtual$ | async) === 'aberto'"
+        [class.btn-outline-primary]="(filtroAtual$ | async) !== 'aberto'"
         (click)="mudarFiltro('aberto')">
         Abertos
       </button>
       <button 
         type="button" 
         class="btn"
-        [class.btn-primary]="filtro === 'em_andamento'"
-        [class.btn-outline-primary]="filtro !== 'em_andamento'"
+        [class.btn-primary]="(filtroAtual$ | async) === 'em_andamento'"
+        [class.btn-outline-primary]="(filtroAtual$ | async) !== 'em_andamento'"
         (click)="mudarFiltro('em_andamento')">
         Em Andamento
       </button>
       <button 
         type="button" 
         class="btn"
-        [class.btn-primary]="filtro === 'fechado'"
-        [class.btn-outline-primary]="filtro !== 'fechado'"
+        [class.btn-primary]="(filtroAtual$ | async) === 'fechado'"
+        [class.btn-outline-primary]="(filtroAtual$ | async) !== 'fechado'"
         (click)="mudarFiltro('fechado')">
         Fechados
       </button>
       <button 
         type="button" 
         class="btn"
-        [class.btn-primary]="filtro === ''"
-        [class.btn-outline-primary]="filtro !== ''"
+        [class.btn-primary]="(filtroAtual$ | async) === ''"
+        [class.btn-outline-primary]="(filtroAtual$ | async) !== ''"
         (click)="mudarFiltro('')">
         Todos
       </button>
     </div>
-  </ng-container>
-</div>
-  <!-- 
-    Usamos o 'chamados$' (do nosso .ts)
-    e o 'async' pipe para mostrar os dados.
-  -->
+  </div>
+
+  <!-- Usamos o 'chamados$' e o 'async' pipe -->
   <div *ngIf="chamados$ | async as chamados; else loading">
     
     <!-- Se não houver chamados -->
@@ -86,22 +78,13 @@
               <td>{{ chamado.titulo }}</td>
 
               <!-- Solicitante -->
-              <!-- 
-                Por enquanto, mostramos o ID.
-                Na próxima página (detalhes), faremos um JOIN no backend
-                para mostrar o nome, setor e cargo do solicitante.
-              -->
               <td>{{ chamado.criado_por_id }}</td>
 
-              <!-- Prioridade (Definida pelo sistema/banco) -->
+              <!-- Prioridade -->
               <td>{{ chamado.prioridade | titlecase }}</td>
 
               <!-- Ações -->
               <td>
-                <!-- 
-                  Este link usa o ID do chamado para navegar
-                  para a página de detalhes que faremos a seguir.
-                -->
                 <a [routerLink]="['/admin/chamado', chamado.id]" class="btn btn-outline-primary btn-sm">
                   Ver Detalhes
                 </a>

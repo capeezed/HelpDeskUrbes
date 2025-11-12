@@ -59,29 +59,24 @@ export class DetalheChamado implements OnInit, OnDestroy {
     private ws: WebsocketService
   ) {}
 
-  ngOnInit(): void {
-  this.route.paramMap.subscribe(params => {
-    this.chamadoId = Number(params.get('id'));
+  async ngOnInit(): Promise<void> {
+    this.chamadoId = Number(this.route.snapshot.paramMap.get('id'));
     if (!this.chamadoId) return;
 
-    // 🔹 carrega dados do chamado e os comentários do banco
+    await this.ws.conectar();
     this.carregarChamado();
     this.carregarComentarios();
 
-    // 🔹 escuta novos comentários em tempo real (via WebSocket)
-    this.ws.onNovoComentario(data => {
-      if (data.chamadoId === this.chamadoId) {
-        this.comentarios.push(data);
-        this.scrollToBottom();
-      }
-    });
-  });
-}
-
-
-  ngOnDestroy(): void {
+    // Essas linhas garantem que apenas um listener será usado
     this.ws.offNovoComentario(this.novoComentarioHandler);
+    this.ws.onNovoComentario(this.novoComentarioHandler);
   }
+
+
+    ngOnDestroy(): void {
+      this.ws.offNovoComentario(this.novoComentarioHandler);
+  }
+
 
   scrollToBottom() {
     const div = this.mensagensContainer?.nativeElement;

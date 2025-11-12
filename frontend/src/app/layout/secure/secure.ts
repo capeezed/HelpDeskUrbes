@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { WebsocketService } from './../../services/websocket';
 import { ToastrService } from 'ngx-toastr';
 import { Router } from '@angular/router';
@@ -11,7 +11,37 @@ import { NotificationService } from '../../services/notification';
   templateUrl: './secure.html',
   styleUrls: ['./secure.css'],
 })
-export class Secure implements OnInit {
+export class Secure implements OnInit, OnDestroy {
+
+  // Guarda referências dos handlers para o off
+  private chamadoAtribuidoHandler = (data: any) => {
+    this.notify.add({
+      tipo: 'atribuicao',
+      texto: data.mensagem || `Seu chamado foi atribuído a um técnico.`,
+      link: `/meus-chamados/detalhe/${data.chamadoId}`
+    });
+  };
+  private statusAlteradoHandler = (data: any) => {
+    this.notify.add({
+      tipo: 'status',
+      texto: `Status alterado para: ${data.status}`,
+      link: `/meus-chamados/detalhe/${data.chamadoId}`
+    });
+  };
+  private novoComentarioHandler = (data: any) => {
+    this.notify.add({
+      tipo: 'comentario',
+      texto: `${data.autor} comentou no chamado.`,
+      link: `/meus-chamados/detalhe/${data.chamadoId}`
+    });
+  };
+  private novoChamadoHandler = (data: any) => {
+    this.notify.add({
+      tipo: 'novo-chamado',
+      texto: `Novo chamado: ${data.titulo}`,
+      link: `/admin/chamado/${data.id}`
+    });
+  };
 
   constructor(
     private ws: WebsocketService,
@@ -22,45 +52,33 @@ export class Secure implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.ws.conectar();
+    this.auth.usuarioCarregado$.subscribe(async (carregado) => {
+      if (carregado && this.auth.usuarioAtual) {
+        await this.ws.conectar();
 
-    // ✅ FUNCIONÁRIO: chamado dele foi atribuído
-    this.ws.onChamadoAtribuido(data => {
-      this.notify.add({
-        tipo: 'atribuicao',
-        texto: data.mensagem || `Seu chamado foi atribuído a um técnico.`,
-        link: `/meus-chamados/detalhe/${data.chamadoId}`
-      });
+        // Remove listeners antigos SEMPRE antes de adicionar os novos
+        this.ws.offChamadoAtribuido(this.chamadoAtribuidoHandler);
+        this.ws.offStatusAlterado(this.statusAlteradoHandler);
+        this.ws.offNovoComentario(this.novoComentarioHandler);
+        this.ws.offNovoChamado(this.novoChamadoHandler);
+
+        this.ws.onChamadoAtribuido(this.chamadoAtribuidoHandler);
+        this.ws.onStatusAlterado(this.statusAlteradoHandler);
+        this.ws.onNovoComentario(this.novoComentarioHandler);
+
+        if (this.auth.ehTecnico) {
+          this.ws.onNovoChamado(this.novoChamadoHandler);
+        }
+      }
     });
+  }
 
-    // ✅ FUNCIONÁRIO: status alterado
-    this.ws.onStatusAlterado(data => {
-      this.notify.add({
-        tipo: 'status',
-        texto: `Status alterado para: ${data.status}`,
-        link: `/meus-chamados/detalhe/${data.chamadoId}`
-      });
-    });
-
-    // ✅ FUNCIONÁRIO: novo comentário
-    this.ws.onNovoComentario(data => {
-      this.notify.add({
-        tipo: 'comentario',
-        texto: `${data.autor} comentou no chamado.`,
-        link: `/meus-chamados/detalhe/${data.chamadoId}`
-      });
-    });
-
-    // ✅ TÉCNICO: novo chamado aberto (somente técnicos recebem do backend)
-    if (this.auth.ehTecnico) {
-      this.ws.onNovoChamado(data => {
-        this.notify.add({
-          tipo: 'novo-chamado',
-          texto: `Novo chamado: ${data.titulo}`,
-          link: `/admin/chamado/${data.id}`
-        });
-      });
-    }
+  ngOnDestroy(): void {
+    // Remove todos os listeners ao destruir o componente (troca de usuário, logout, navegação)
+    this.ws.offChamadoAtribuido(this.chamadoAtribuidoHandler);
+    this.ws.offStatusAlterado(this.statusAlteradoHandler);
+    this.ws.offNovoComentario(this.novoComentarioHandler);
+    this.ws.offNovoChamado(this.novoChamadoHandler);
   }
 
   abrirNotificacoes() {
@@ -70,5 +88,7 @@ export class Secure implements OnInit {
   logout() {
     this.auth.logout();
     this.router.navigate(['/login']);
+    // Remove listeners imediatamente no logout
+    this.ngOnDestroy();
   }
 }

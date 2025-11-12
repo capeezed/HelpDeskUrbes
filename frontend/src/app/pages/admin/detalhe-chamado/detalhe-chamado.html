@@ -71,7 +71,12 @@
             </div>
 
             <div class="enviar-box mt-2">
-              <input type="text" [(ngModel)]="novoComentario" class="form-control" placeholder="Digite uma mensagem...">
+              <input 
+                type="text" 
+                [(ngModel)]="novoComentario" 
+                class="form-control" 
+                placeholder="Digite uma mensagem..."
+                (keydown.enter)="enviarComentario()">
               <button class="btn btn-success" (click)="enviarComentario()">Enviar</button>
             </div>
 
