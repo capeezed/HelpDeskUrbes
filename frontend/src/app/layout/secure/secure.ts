@@ -13,7 +13,6 @@ import { NotificationService } from '../../services/notification';
 })
 export class Secure implements OnInit, OnDestroy {
 
-  // Guarda referências dos handlers para o off
   private chamadoAtribuidoHandler = (data: any) => {
     this.notify.add({
       tipo: 'atribuicao',
@@ -21,6 +20,7 @@ export class Secure implements OnInit, OnDestroy {
       link: `/meus-chamados/detalhe/${data.chamadoId}`
     });
   };
+
   private statusAlteradoHandler = (data: any) => {
     this.notify.add({
       tipo: 'status',
@@ -28,6 +28,7 @@ export class Secure implements OnInit, OnDestroy {
       link: `/meus-chamados/detalhe/${data.chamadoId}`
     });
   };
+
   private novoComentarioHandler = (data: any) => {
     this.notify.add({
       tipo: 'comentario',
@@ -35,6 +36,7 @@ export class Secure implements OnInit, OnDestroy {
       link: `/meus-chamados/detalhe/${data.chamadoId}`
     });
   };
+
   private novoChamadoHandler = (data: any) => {
     this.notify.add({
       tipo: 'novo-chamado',
@@ -42,6 +44,8 @@ export class Secure implements OnInit, OnDestroy {
       link: `/admin/chamado/${data.id}`
     });
   };
+
+  private listenersRegistrados = false; // flag para evitar duplicidade
 
   constructor(
     private ws: WebsocketService,
@@ -52,34 +56,32 @@ export class Secure implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.auth.usuarioCarregado$.subscribe(async (carregado) => {
-      if (carregado && this.auth.usuarioAtual) {
-        await this.ws.conectar();
+  this.auth.usuarioCarregado$.subscribe(async (carregado) => {
+    if (carregado && this.auth.usuarioAtual && !this.listenersRegistrados) {
+      await this.ws.conectar();
 
-        // Remove listeners antigos SEMPRE antes de adicionar os novos
-        this.ws.offChamadoAtribuido(this.chamadoAtribuidoHandler);
-        this.ws.offStatusAlterado(this.statusAlteradoHandler);
-        this.ws.offNovoComentario(this.novoComentarioHandler);
-        this.ws.offNovoChamado(this.novoChamadoHandler);
+      this.ws.onChamadoAtribuido(this.chamadoAtribuidoHandler);
+      this.ws.onStatusAlterado(this.statusAlteradoHandler);
+      // ❌ REMOVA esta linha:
+      // this.ws.onNovoComentario(this.novoComentarioHandler);
 
-        this.ws.onChamadoAtribuido(this.chamadoAtribuidoHandler);
-        this.ws.onStatusAlterado(this.statusAlteradoHandler);
-        this.ws.onNovoComentario(this.novoComentarioHandler);
-
-        if (this.auth.ehTecnico) {
-          this.ws.onNovoChamado(this.novoChamadoHandler);
-        }
+      if (this.auth.ehTecnico) {
+        this.ws.onNovoChamado(this.novoChamadoHandler);
       }
-    });
-  }
 
-  ngOnDestroy(): void {
-    // Remove todos os listeners ao destruir o componente (troca de usuário, logout, navegação)
-    this.ws.offChamadoAtribuido(this.chamadoAtribuidoHandler);
-    this.ws.offStatusAlterado(this.statusAlteradoHandler);
-    this.ws.offNovoComentario(this.novoComentarioHandler);
-    this.ws.offNovoChamado(this.novoChamadoHandler);
-  }
+      this.listenersRegistrados = true;
+    }
+  });
+}
+
+ngOnDestroy(): void {
+  this.ws.offChamadoAtribuido(this.chamadoAtribuidoHandler);
+  this.ws.offStatusAlterado(this.statusAlteradoHandler);
+  // ❌ REMOVA esta linha também:
+  // this.ws.offNovoComentario(this.novoComentarioHandler);
+  this.ws.offNovoChamado(this.novoChamadoHandler);
+  this.listenersRegistrados = false;
+}
 
   abrirNotificacoes() {
     this.notify.marcarTodasComoLidas();
@@ -88,7 +90,6 @@ export class Secure implements OnInit, OnDestroy {
   logout() {
     this.auth.logout();
     this.router.navigate(['/login']);
-    // Remove listeners imediatamente no logout
     this.ngOnDestroy();
   }
 }

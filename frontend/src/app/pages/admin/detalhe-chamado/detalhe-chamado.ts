@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, switchMap, catchError, of, tap, map } from 'rxjs';
 import { Chamado, ChamadoService } from '../../../services/chamado';
@@ -37,6 +37,7 @@ export class DetalheChamado implements OnInit, OnDestroy {
   @ViewChild('mensagensContainer') mensagensContainer!: ElementRef<HTMLDivElement>;
 
   private novoComentarioHandler = (payload: any) => {
+    console.log('💬 Novo comentário recebido (técnico):', payload);
     if (Number(payload?.chamadoId) !== this.chamadoId) return;
 
     this.comentarios.push({
@@ -46,7 +47,11 @@ export class DetalheChamado implements OnInit, OnDestroy {
       criado_em: payload.criado_em
     });
 
-    queueMicrotask(() => this.scrollToBottom());
+    // Força detecção de mudanças do Angular
+    this.cdr.detectChanges();
+    
+    // Scroll com delay para garantir que o DOM foi atualizado
+    setTimeout(() => this.scrollToBottom(), 100);
   };
 
   constructor(
@@ -56,31 +61,32 @@ export class DetalheChamado implements OnInit, OnDestroy {
     public authService: AuthService,
     private comentariosService: ComentariosService,
     private relatorioService: RelatorioService,
-    private ws: WebsocketService
+    private ws: WebsocketService,
+    private cdr: ChangeDetectorRef
   ) {}
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     this.chamadoId = Number(this.route.snapshot.paramMap.get('id'));
     if (!this.chamadoId) return;
 
-    await this.ws.conectar();
+    this.ws.conectar();
     this.carregarChamado();
     this.carregarComentarios();
 
-    // Essas linhas garantem que apenas um listener será usado
+    // Remove listener antigo e adiciona novo
     this.ws.offNovoComentario(this.novoComentarioHandler);
     this.ws.onNovoComentario(this.novoComentarioHandler);
   }
 
-
-    ngOnDestroy(): void {
-      this.ws.offNovoComentario(this.novoComentarioHandler);
+  ngOnDestroy(): void {
+    this.ws.offNovoComentario(this.novoComentarioHandler);
   }
-
 
   scrollToBottom() {
     const div = this.mensagensContainer?.nativeElement;
-    if (div) div.scrollTop = div.scrollHeight;
+    if (div) {
+      div.scrollTop = div.scrollHeight;
+    }
   }
 
   carregarChamado(): void {
@@ -106,21 +112,20 @@ export class DetalheChamado implements OnInit, OnDestroy {
   }
 
   carregarComentarios(): void {
-  console.log('🌀 Carregando comentários para', this.chamadoId);
-  this.comentariosService.getComentarios(this.chamadoId)
-    .subscribe({
-      next: (res) => {
-        console.log('✅ Comentários recebidos:', res);
-        this.comentarios = res;
-        queueMicrotask(() => this.scrollToBottom());
-      },
-      error: (err) => {
-        console.error('❌ Erro ao carregar comentários:', err);
-        this.mensagemErro = 'Erro ao carregar comentários.';
-      }
-    });
-}
-
+    console.log('🌀 Carregando comentários para', this.chamadoId);
+    this.comentariosService.getComentarios(this.chamadoId)
+      .subscribe({
+        next: (res) => {
+          console.log('✅ Comentários recebidos:', res);
+          this.comentarios = res;
+          setTimeout(() => this.scrollToBottom(), 100);
+        },
+        error: (err) => {
+          console.error('❌ Erro ao carregar comentários:', err);
+          this.mensagemErro = 'Erro ao carregar comentários.';
+        }
+      });
+  }
 
   enviarComentario(): void {
     if (!this.novoComentario.trim()) return;

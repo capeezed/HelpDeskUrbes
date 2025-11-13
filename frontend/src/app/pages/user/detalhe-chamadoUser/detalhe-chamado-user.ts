@@ -45,24 +45,23 @@ export class DetalheChamadoUser implements OnInit, OnDestroy {
     private ws: WebsocketService
   ) {}
 
-async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
   this.chamadoId = Number(this.route.snapshot.paramMap.get('id'));
   if (!this.chamadoId) return;
 
-  await this.ws.conectar();
+  this.ws.conectar();
   this.carregarChamado();
   this.carregarComentarios();
 
-  // Essas linhas garantem que apenas um listener será usado
+  // Remove listener antigo (se existir) e adiciona novo
   this.ws.offNovoComentario(this.novoComentarioHandler);
   this.ws.onNovoComentario(this.novoComentarioHandler);
 }
 
-
-
-  ngOnDestroy(): void {
-    this.ws.offNovoComentario(this.novoComentarioHandler);
-  }
+ngOnDestroy(): void {
+  // SEMPRE remove ao sair do componente
+  this.ws.offNovoComentario(this.novoComentarioHandler);
+}
 
 
   scrollToBottom() {
