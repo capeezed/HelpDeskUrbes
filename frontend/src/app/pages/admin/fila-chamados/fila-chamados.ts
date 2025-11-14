@@ -66,4 +66,13 @@ export class FilaChamados implements OnInit, OnDestroy {
       default: return 'bg-light text-dark';
     }
   }
+  getPrioridadeClass(prioridade: string | undefined) {
+    switch (prioridade) {
+      case 'urgente': return 'bg-danger text-white';
+      case 'alta': return 'bg-warning text-dark';
+      case 'media': return 'bg-info text-white';
+      case 'baixa': return 'bg-secondary text-white';
+      default: return 'bg-light text-dark';
+    }   
+  }
 }

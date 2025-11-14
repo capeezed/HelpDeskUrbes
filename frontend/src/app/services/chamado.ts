@@ -96,5 +96,8 @@ export class ChamadoService {
     return this.http.put(`${this.apiUrl}/chamados/${id}/status`, { novoStatus });
   }
 
+  alterarPrioridade(chamadoId: number, prioridade: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/chamados/${chamadoId}/prioridade`, { prioridade });
+  }
   
 }

@@ -95,6 +95,38 @@
         </div>
         <div class="card-body">
 
+          <!-- ===================== ALTERAR PRIORIDADE ===================== -->
+          <div class="mb-3">
+            <label class="form-label"><strong>Prioridade Atual:</strong></label>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge fs-6" [ngClass]="getPrioridadeClass(chamado.prioridade)">
+                {{ chamado.prioridade | titlecase }}
+              </span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="prioridadeSelect" class="form-label">Alterar prioridade para:</label>
+            <select class="form-select" id="prioridadeSelect" [(ngModel)]="prioridadeSelecionada">
+              <option value="baixa">Baixa</option>
+              <option value="media">Média</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+
+          <div class="d-grid gap-2 mb-3">
+            <button class="btn btn-primary" 
+                    (click)="alterarPrioridade(chamado.id)" 
+                    [disabled]="alterandoPrioridade || prioridadeSelecionada === chamado.prioridade">
+              <span *ngIf="!alterandoPrioridade">Alterar Prioridade</span>
+              <span *ngIf="alterandoPrioridade" class="spinner-border spinner-border-sm"></span>
+            </button>
+          </div>
+
+          <hr class="my-3">
+          <!-- ===================== FIM PRIORIDADE ===================== -->
+
           <!-- Técnico atribuído -->
           <div class="mb-3">
             <strong>Atribuído para:</strong>

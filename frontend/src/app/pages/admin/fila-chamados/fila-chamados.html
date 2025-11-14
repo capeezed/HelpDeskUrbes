@@ -59,7 +59,8 @@
             <tr>
               <th scope="col">Status</th>
               <th scope="col">Título</th>
-              <th scope="col">Solicitante (ID)</th>
+              <th scope="col">Solicitante</th>
+              <th scope="col">Data/Hora</th> <!-- NOVA COLUNA -->
               <th scope="col">Prioridade</th>
               <th scope="col">Ações</th>
             </tr>
@@ -78,10 +79,19 @@
               <td>{{ chamado.titulo }}</td>
 
               <!-- Solicitante -->
-              <td>{{ chamado.criado_por_id }}</td>
+              <td>{{ chamado.solicitante_nome || 'Usuário ID: ' + chamado.criado_por_id }}</td>
+
+              <!-- Data/Hora de criação (NOVA COLUNA) -->
+              <td>
+                <small>{{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}</small>
+              </td>
 
               <!-- Prioridade -->
-              <td>{{ chamado.prioridade | titlecase }}</td>
+              <td>
+                <span class="badge" [ngClass]="getPrioridadeClass(chamado.prioridade)">
+                  {{ chamado.prioridade | titlecase }}
+                </span>
+              </td>
 
               <!-- Ações -->
               <td>

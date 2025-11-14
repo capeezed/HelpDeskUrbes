@@ -33,6 +33,8 @@ export class DetalheChamado implements OnInit, OnDestroy {
   relTitulo = '';
   relTexto = '';
   salvandoRelatorio = false;
+  prioridadeSelecionada: string = 'media';
+  alterandoPrioridade = false;
 
   @ViewChild('mensagensContainer') mensagensContainer!: ElementRef<HTMLDivElement>;
 
@@ -231,4 +233,31 @@ export class DetalheChamado implements OnInit, OnDestroy {
       }
     });
   }
+
+  alterarPrioridade(id: number) {
+  this.alterandoPrioridade = true;
+  this.chamadoService.alterarPrioridade(id, this.prioridadeSelecionada).subscribe({
+    next: () => {
+      this.alterandoPrioridade = false;
+      this.mensagemAcao = 'Prioridade alterada!';
+      this.carregarChamado();
+    },
+    error: () => {
+      this.alterandoPrioridade = false;
+      alert('Erro ao alterar prioridade');
+    }
+  });
+  }
+
+  getPrioridadeClass(prioridade: string | undefined) {
+  switch (prioridade) {
+    case 'urgente': return 'bg-danger text-white';
+    case 'alta': return 'bg-warning text-dark';
+    case 'media': return 'bg-info text-white';
+    case 'baixa': return 'bg-secondary text-white';
+    default: return 'bg-light text-dark';
+  }
+  }
+
+  
 }

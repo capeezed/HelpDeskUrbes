@@ -340,17 +340,14 @@ app.put('/api/chamados/:id/status', autenticarToken, apenasTecnicos, async (req,
  */
 app.put('/api/chamados/:id/prioridade', autenticarToken, apenasTecnicos, async (req, res) => {
   const chamadoId = req.params.id;
-  const { novaPrioridade } = req.body;
-
-  if (!novaPrioridade) {
-    return res.status(400).json({ message: 'Nova prioridade é obrigatória.' });
-  }
+  const { prioridade } = req.body;
+  const validas = ['baixa', 'media', 'alta', 'urgente'];
+  if (!validas.includes(prioridade)) return res.status(400).json({ message: 'Prioridade inválida.' });
   try {
-    await pool.query('UPDATE chamados SET prioridade = ? WHERE id = ?', [novaPrioridade, chamadoId]);
-    res.json({ message: 'Prioridade atualizada com sucesso!' });
+    await pool.query('UPDATE chamados SET prioridade = ? WHERE id = ?', [prioridade, chamadoId]);
+    res.json({ message: 'Prioridade alterada!', prioridade });
   } catch (err) {
-    console.error('Erro ao mudar prioridade:', err);
-    res.status(500).json({ message: 'Erro ao salvar dados' });
+    res.status(500).json({ message: 'Erro ao alterar prioridade' });
   }
 });
 
