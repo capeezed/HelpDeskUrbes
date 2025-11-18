@@ -1,3 +1,5 @@
+<!-- src/app/pages/user/detalhe-chamado-user/detalhe-chamado-user.component.html -->
+
 <div class="container mt-4" *ngIf="chamado$ | async as chamado; else carregando">
 
   <!-- Voltar -->
@@ -13,6 +15,23 @@
     </div>
 
     <div class="card-body">
+      
+      <!-- ===================== TIPO E CATEGORIA ===================== -->
+      <div class="row mb-3 p-3 bg-light rounded border">
+        <div class="col-md-6 mb-2 mb-md-0">
+          <strong>Tipo:</strong>
+          <span class="badge ms-2" 
+                [ngClass]="chamado.tipo === 'incidente' ? 'bg-danger' : 'bg-primary'">
+            {{ chamado.tipo === 'incidente' ? 'Incidente' : 'Solicitação' }}
+          </span>
+        </div>
+        <div class="col-md-6">
+          <strong>Categoria:</strong>
+          <span class="ms-2 text-muted">{{ chamado.categoria || 'Não especificado' }}</span>
+        </div>
+      </div>
+      <!-- ===================== FIM TIPO E CATEGORIA ===================== -->
+
       <h6>Descrição:</h6>
       <p class="descricao bg-light p-2 rounded">{{ chamado.descricao }}</p>
 

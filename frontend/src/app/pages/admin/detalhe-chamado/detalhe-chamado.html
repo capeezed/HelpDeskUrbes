@@ -20,6 +20,23 @@
         </div>
 
         <div class="card-body">
+          
+          <!-- ===================== TIPO E CATEGORIA ===================== -->
+          <div class="row mb-3 p-3 bg-light rounded border">
+            <div class="col-md-6 mb-2 mb-md-0">
+              <strong>Tipo:</strong>
+              <span class="badge ms-2" 
+                    [ngClass]="chamado.tipo === 'incidente' ? 'bg-danger' : 'bg-primary'">
+                {{ chamado.tipo === 'incidente' ? 'Incidente' : 'Solicitação' }}
+              </span>
+            </div>
+            <div class="col-md-6">
+              <strong>Categoria:</strong>
+              <span class="ms-2 text-muted">{{ chamado.categoria || 'Não especificado' }}</span>
+            </div>
+          </div>
+          <!-- ===================== FIM TIPO E CATEGORIA ===================== -->
+
           <h5 class="card-title">Descrição do Problema:</h5>
           <p class="card-text bg-light p-3 rounded" style="white-space: pre-wrap;">
             {{ chamado.descricao }}

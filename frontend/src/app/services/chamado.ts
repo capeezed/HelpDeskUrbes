@@ -8,24 +8,21 @@ import { environment } from '../../environments/environment.prod';
 import { AuthService } from './auth.service';
 
 // Interface (COMPLETA E CORRIGIDA)
-// Esta interface agora inclui os campos do JOIN que o seu HTML precisa
 export interface Chamado {
   id: number;
   titulo: string;
   descricao: string;
+  tipo: 'incidente' | 'solicitacao';     // ✅ JÁ TEM
+  categoria?: string;                     // ⚠️ ADICIONE ESTA LINHA
   status: 'aberto' | 'em_andamento' | 'fechado' | 'resolvido' | 'pendente';
   prioridade: 'baixa' | 'media' | 'alta' | 'urgente';
   criado_por_id: number;
   criado_em: string; 
   atribuido_para_id: number | null; 
   anexo_url?: string; 
-
-  // --- CAMPOS DO JOIN ---
   solicitante_nome?: string;
   solicitante_setor?: string;
   solicitante_cargo?: string;
-  
-  // --- CAMPO NOVO DO SEGUNDO JOIN ---
   tecnico_atribuido_nome?: string;
 }
 
@@ -33,6 +30,7 @@ export interface Chamado {
 export interface NovoChamado {
   titulo: string;
   descricao: string;
+  tipo: 'incidente' | 'solicitacao';     // ✅ JÁ TEM
 }
 
 @Injectable({
@@ -43,61 +41,35 @@ export class ChamadoService {
 
   constructor(private http: HttpClient, private authService: AuthService) { }
 
-  /**
-   * Busca chamados (Inteligente: todos para TI, só os meus para funcionário)
-   */
   getMeusChamados(status?: string): Observable<Chamado[]> {
-    // 2. Cria os parâmetros HTTP
     let httpParams = new HttpParams();
 
-    // 3. Adiciona o parâmetro 'status' APENAS SE ele foi fornecido
     if (status) {
       httpParams = httpParams.set('status', status);
     }
     
-    // 4. Envia a requisição com os parâmetros
-    // (O Interceptor ainda cuida do token de autenticação)
     return this.http.get<Chamado[]>(`${this.apiUrl}/chamados`, { 
       params: httpParams 
     });
   }
 
-  /**
-   * Cria um novo chamado
-   */
   criarChamado(formData: FormData): Observable<any> {
-    // O AuthService/Interceptor já adiciona o token.
-    // O HttpClient é inteligente: quando vê FormData, ele define
-    // o Content-Type como 'multipart/form-data' automaticamente.
     return this.http.post(`${this.apiUrl}/chamado`, formData);
   }
 
-  /**
-   * NOVO: Busca um único chamado pelo seu ID.
-   */
   getChamadoById(id: number): Observable<Chamado> {
-    // Rota protegida (apenasTecnicos), Interceptor envia o token
     return this.http.get<Chamado>(`${this.apiUrl}/chamado/${id}`);
   }
 
-  /**
-   * NOVO: Técnico se atribui a um chamado.
-   */
   atribuirChamado(chamadoId: number, tecnicoId: number): Observable<any> {
-    // Agora enviamos o ID do técnico no corpo da requisição
     return this.http.put(`${this.apiUrl}/chamados/${chamadoId}/atribuir`, { tecnicoId });
   }
 
-  /**
-   * NOVO: Técnico muda o status de um chamado.
-   */
   mudarStatus(id: number, novoStatus: string): Observable<any> {
-    // Rota protegida (apenasTecnicos), Interceptor envia o token
     return this.http.put(`${this.apiUrl}/chamados/${id}/status`, { novoStatus });
   }
 
   alterarPrioridade(chamadoId: number, prioridade: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/chamados/${chamadoId}/prioridade`, { prioridade });
   }
-  
 }

@@ -217,8 +217,19 @@ app.get('/api/tecnicos', autenticarToken, apenasTecnicos, async (req, res) => {
  */
 app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, res) => {
   try {
-    const { titulo, descricao } = req.body;
+    const { titulo, descricao, tipo, categoria } = req.body; // ADICIONADOS tipo e categoria
     const criado_por_id = req.usuario.id;
+    
+    // Validações
+    if (!titulo || !descricao || !tipo || !categoria) {
+      return res.status(400).json({ message: 'Todos os campos obrigatórios devem ser preenchidos.' });
+    }
+    
+    // Valida o tipo
+    if (!['incidente', 'solicitacao'].includes(tipo)) {
+      return res.status(400).json({ message: 'Tipo inválido. Use "incidente" ou "solicitacao".' });
+    }
+    
     let anexo_url = null;
 
     if (req.file) {
@@ -226,11 +237,21 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
       anexo_url = `${baseUrl}/uploads/${req.file.filename}`;
     }
 
+    // SQL atualizado com tipo e categoria
     const sql = `
-      INSERT INTO chamados (titulo, descricao, criado_por_id, anexo_url)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO chamados (titulo, descricao, tipo, categoria, criado_por_id, anexo_url)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
-    const [result] = await pool.query(sql, [titulo, descricao, criado_por_id, anexo_url]);
+    
+    const [result] = await pool.query(sql, [
+      titulo, 
+      descricao, 
+      tipo, 
+      categoria, 
+      criado_por_id, 
+      anexo_url
+    ]);
+    
     const [novoChamadoRows] = await pool.query('SELECT * FROM chamados WHERE id = ?', [result.insertId]);
     const novoChamado = novoChamadoRows[0];
 
@@ -238,6 +259,8 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
     await enviarParaTecnicos('novo-chamado', {
       chamadoId: novoChamado.id,
       titulo: novoChamado.titulo,
+      tipo: novoChamado.tipo,
+      categoria: novoChamado.categoria,
       criado_por_id,
       criado_em: novoChamado.criado_em,
       status: novoChamado.status
