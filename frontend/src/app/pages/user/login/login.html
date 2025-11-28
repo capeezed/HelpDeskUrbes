@@ -36,33 +36,26 @@
           >
         </div>
 
-        <!-- 
-          BOTÃO ATUALIZADO com [disabled] e *ngIf para o spinner
-        -->
+        <!-- Botão de login -->
         <button type="submit" class="btn btn-primary w-100 mb-3" [disabled]="isLoading">
-          
-          <!-- Se NÃO estiver carregando, mostra o texto -->
           <span *ngIf="!isLoading">Entrar</span>
-        
-          <!-- Se ESTIVER carregando, mostra o spinner -->
           <span *ngIf="isLoading">
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
             Carregando...
           </span>
-          
         </button>
 
-        <!-- Mensagem de Erro -->
-        <p *ngIf="mensagemErro" class="alert alert-danger text-center">
+        <!-- Mensagem de erro -->
+        <div *ngIf="mensagemErro" class="alert alert-danger" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
           {{ mensagemErro }}
-        </p>
+        </div>
       </form>
 
       <div class="text-center mt-3">
         <p class="mb-0">
           Não tem uma conta? <a routerLink="/cadastro" class="text-green-primary">Cadastre-se aqui</a>
         </p>
-        <br>
       </div>
     </div>
   </div>

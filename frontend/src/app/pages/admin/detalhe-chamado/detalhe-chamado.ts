@@ -1,5 +1,7 @@
+// src/app/pages/admin/detalhe-chamado/detalhe-chamado.component.ts
+
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, switchMap, catchError, of, tap, map } from 'rxjs';
 import { Chamado, ChamadoService } from '../../../services/chamado';
 import { PerfilTecnico, DadosGerais } from '../../../services/dados-gerais';
@@ -7,6 +9,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ComentariosService } from '../../../services/comentarios';
 import { RelatorioService, RelatorioChamado } from '../../../services/relatorio';
 import { WebsocketService } from '../../../services/websocket';
+import { NavegacaoChamadosService } from '../../../services/navegacao-chamados';
 
 @Component({
   selector: 'app-detalhe-chamado',
@@ -39,49 +42,55 @@ export class DetalheChamado implements OnInit, OnDestroy {
   @ViewChild('mensagensContainer') mensagensContainer!: ElementRef<HTMLDivElement>;
 
   private novoComentarioHandler = (payload: any) => {
-    console.log('💬 Novo comentário recebido (técnico):', payload);
     if (Number(payload?.chamadoId) !== this.chamadoId) return;
-
     this.comentarios.push({
       texto: payload.texto,
       autor: payload.autor,
       autor_nivel: payload.autor_nivel,
       criado_em: payload.criado_em
     });
-
-    // Força detecção de mudanças do Angular
     this.cdr.detectChanges();
-    
-    // Scroll com delay para garantir que o DOM foi atualizado
     setTimeout(() => this.scrollToBottom(), 100);
   };
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private chamadoService: ChamadoService,
     private dadosGeraisService: DadosGerais,
     public authService: AuthService,
     private comentariosService: ComentariosService,
     private relatorioService: RelatorioService,
     private ws: WebsocketService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private navService: NavegacaoChamadosService // NOVO
   ) {}
 
   ngOnInit(): void {
     this.chamadoId = Number(this.route.snapshot.paramMap.get('id'));
-    if (!this.chamadoId) return;
-
-    this.ws.conectar();
     this.carregarChamado();
     this.carregarComentarios();
-
-    // Remove listener antigo e adiciona novo
     this.ws.offNovoComentario(this.novoComentarioHandler);
     this.ws.onNovoComentario(this.novoComentarioHandler);
   }
 
   ngOnDestroy(): void {
     this.ws.offNovoComentario(this.novoComentarioHandler);
+  }
+
+  // NOVO: Usa o serviço para obter IDs anterior e próximo
+  get chamadoIdAnterior() {
+    return this.navService.getAnteriorId(this.chamadoId);
+  }
+
+  get chamadoIdProximo() {
+    return this.navService.getProximoId(this.chamadoId);
+  }
+
+  irParaChamado(id: number | undefined) {
+    if (id !== undefined) {
+      this.router.navigate(['/admin/chamado', id]);
+    }
   }
 
   scrollToBottom() {
@@ -99,7 +108,9 @@ export class DetalheChamado implements OnInit, OnDestroy {
           this.mensagemErro = 'ID não encontrado';
           return of(null);
         }
+        this.chamadoId = id; // Atualiza o ID ao navegar
         this.carregarRelatorio(id);
+        this.carregarComentarios(); // Recarrega comentários ao mudar de chamado
         return this.chamadoService.getChamadoById(id).pipe(
           tap(chamado => {
             this.tecnicoSelecionadoId = chamado?.atribuido_para_id || null;
@@ -114,16 +125,13 @@ export class DetalheChamado implements OnInit, OnDestroy {
   }
 
   carregarComentarios(): void {
-    console.log('🌀 Carregando comentários para', this.chamadoId);
     this.comentariosService.getComentarios(this.chamadoId)
       .subscribe({
         next: (res) => {
-          console.log('✅ Comentários recebidos:', res);
           this.comentarios = res;
           setTimeout(() => this.scrollToBottom(), 100);
         },
         error: (err) => {
-          console.error('❌ Erro ao carregar comentários:', err);
           this.mensagemErro = 'Erro ao carregar comentários.';
         }
       });
@@ -131,9 +139,7 @@ export class DetalheChamado implements OnInit, OnDestroy {
 
   enviarComentario(): void {
     if (!this.novoComentario.trim()) return;
-
     this.isLoadingComentario = true;
-
     this.comentariosService.enviarComentario(this.chamadoId, this.novoComentario)
       .subscribe({
         next: () => {
@@ -164,9 +170,7 @@ export class DetalheChamado implements OnInit, OnDestroy {
 
   atribuirChamado(id: number) {
     if (!this.tecnicoSelecionadoId) return alert('Selecione um técnico');
-
     this.isLoading = true;
-
     this.chamadoService.atribuirChamado(id, this.tecnicoSelecionadoId).subscribe({
       next: () => {
         this.isLoading = false;
@@ -217,9 +221,7 @@ export class DetalheChamado implements OnInit, OnDestroy {
     if (!this.relTitulo.trim() || !this.relTexto.trim()) {
       return alert('Preencha título e relatório');
     }
-
     this.salvandoRelatorio = true;
-
     this.relatorioService.criar(id, this.relTitulo, this.relTexto).subscribe({
       next: r => {
         this.relatorio = r;
@@ -235,29 +237,27 @@ export class DetalheChamado implements OnInit, OnDestroy {
   }
 
   alterarPrioridade(id: number) {
-  this.alterandoPrioridade = true;
-  this.chamadoService.alterarPrioridade(id, this.prioridadeSelecionada).subscribe({
-    next: () => {
-      this.alterandoPrioridade = false;
-      this.mensagemAcao = 'Prioridade alterada!';
-      this.carregarChamado();
-    },
-    error: () => {
-      this.alterandoPrioridade = false;
-      alert('Erro ao alterar prioridade');
-    }
-  });
+    this.alterandoPrioridade = true;
+    this.chamadoService.alterarPrioridade(id, this.prioridadeSelecionada).subscribe({
+      next: () => {
+        this.alterandoPrioridade = false;
+        this.mensagemAcao = 'Prioridade alterada!';
+        this.carregarChamado();
+      },
+      error: () => {
+        this.alterandoPrioridade = false;
+        alert('Erro ao alterar prioridade');
+      }
+    });
   }
 
   getPrioridadeClass(prioridade: string | undefined) {
-  switch (prioridade) {
-    case 'urgente': return 'bg-danger text-white';
-    case 'alta': return 'bg-warning text-dark';
-    case 'media': return 'bg-info text-white';
-    case 'baixa': return 'bg-secondary text-white';
-    default: return 'bg-light text-dark';
+    switch (prioridade) {
+      case 'urgente': return 'bg-danger text-white';
+      case 'alta': return 'bg-warning text-dark';
+      case 'media': return 'bg-info text-white';
+      case 'baixa': return 'bg-secondary text-white';
+      default: return 'bg-light text-dark';
+    }
   }
-  }
-
-  
 }

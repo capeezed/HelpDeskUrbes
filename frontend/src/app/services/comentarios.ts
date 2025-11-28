@@ -8,13 +8,13 @@ import { Observable } from 'rxjs';
 })
 export class ComentariosService {
 
-  private apiUrl = 'http://172.16.8.18:3000/api/chamados';
+  private apiUrl = 'http://191.242.225.226:300/api/chamados';
 
   constructor(private http: HttpClient) {}
 
   getComentarios(chamadoId: number): Observable<any[]> {
   console.log('🔍 Buscando comentários do chamado', chamadoId);
-  return this.http.get<any[]>(`http://172.16.8.18:3000/api/chamados/${chamadoId}/comentarios`);
+  return this.http.get<any[]>(`http://191.242.225.226:300/api/chamados/${chamadoId}/comentarios`);
 }
 
 

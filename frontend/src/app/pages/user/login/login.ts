@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService } from '../../../services/auth.service'; // O novo AuthService
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -10,38 +10,47 @@ import { AuthService } from '../../../services/auth.service'; // O novo AuthServ
 })
 export class Login {
 
-  // Variáveis para o formulário
   email = '';
   password = '';
   mensagemErro = '';
-  
-  // 1. ADICIONAMOS A VARIÁVEL 'isLoading'
-  isLoading = false; 
+  isLoading = false;
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) { }
 
-  /**
-   * 2. Função de login REFATORADA para .subscribe()
-   */
   handleLogin() {
+    // Limpa mensagem de erro anterior
+    this.mensagemErro = '';
     this.isLoading = true;
+
     this.authService.loginComEmail(this.email, this.password).subscribe({
       next: (response) => {
         this.isLoading = false;
         
-        // --- LÓGICA DE REDIRECIONAMENTO ---
+        // Redireciona conforme o tipo de usuário
         if (this.authService.ehTecnico) {
-          this.router.navigate(['/admin/fila']); // Vai para a Fila de TI
+          this.router.navigate(['/admin/fila']);
         } else {
-          this.router.navigate(['/dashboard']); // Vai para o Dashboard normal
+          this.router.navigate(['/dashboard']);
         }
-        
       },
       error: (err) => {
-        // ... (seu código de erro)
+        this.isLoading = false;
+        
+        // Tratamento de erros específicos
+        if (err.status === 401) {
+          this.mensagemErro = 'Email ou senha incorretos. Tente novamente.';
+        } else if (err.status === 0) {
+          this.mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        } else if (err.status === 500) {
+          this.mensagemErro = 'Erro no servidor. Contate o suporte.';
+        } else {
+          this.mensagemErro = 'Erro ao fazer login. Tente novamente mais tarde.';
+        }
+        
+        console.error('Erro no login:', err);
       }
     });
   }

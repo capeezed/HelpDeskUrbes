@@ -91,5 +91,6 @@ ngOnDestroy(): void {
     this.auth.logout();
     this.router.navigate(['/login']);
     this.ngOnDestroy();
+    this.ws.desconectar();
   }
 }

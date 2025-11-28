@@ -7,6 +7,20 @@
     &larr; Voltar para a Fila
   </a>
 
+  <!-- Navegação entre chamados -->
+  <div class="d-flex justify-content-between mb-3">
+    <button class="btn btn-outline-primary"
+            [disabled]="!chamadoIdAnterior"
+            (click)="irParaChamado(chamadoIdAnterior)">
+      ← Chamado Anterior
+    </button>
+    <button class="btn btn-outline-primary"
+            [disabled]="!chamadoIdProximo"
+            (click)="irParaChamado(chamadoIdProximo)">
+      Próximo Chamado →
+    </button>
+  </div>
+  
   <div class="row">
     
     <!-- ===================== COLUNA PRINCIPAL ===================== -->
@@ -68,25 +82,19 @@
           <!-- ===================== CHAT DE COMENTÁRIOS ===================== -->
           <hr>
           <h5 class="mt-4">Chat</h5>
-
           <div class="chat-container mt-2">
-
             <div class="mensagens d-flex flex-column" #mensagensContainer>
-
               <div *ngFor="let c of comentarios"
                   class="mensagem"
                   [ngClass]="{
                     'func': c.autor_nivel === 'funcionario',
                     'tec': c.autor_nivel === 'tecnico'
                   }">
-
                 <div class="autor">{{ c.autor }} ({{ c.autor_nivel }})</div>
                 <div class="texto">{{ c.texto }}</div>
                 <div class="data">{{ c.criado_em | date:'dd/MM/yyyy HH:mm' }}</div>
               </div>
-
             </div>
-
             <div class="enviar-box mt-2">
               <input 
                 type="text" 
@@ -96,7 +104,6 @@
                 (keydown.enter)="enviarComentario()">
               <button class="btn btn-success" (click)="enviarComentario()">Enviar</button>
             </div>
-
           </div>
           <!-- ===================== FIM DO CHAT ===================== -->
 

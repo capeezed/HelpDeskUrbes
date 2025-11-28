@@ -7,6 +7,20 @@
     &larr; Voltar
   </a>
 
+  <!-- Navegação entre chamados -->
+  <div class="d-flex justify-content-between mb-3">
+    <button class="btn btn-outline-primary"
+            [disabled]="!chamadoIdAnterior"
+            (click)="irParaChamado(chamadoIdAnterior)">
+      ← Chamado Anterior
+    </button>
+    <button class="btn btn-outline-primary"
+            [disabled]="!chamadoIdProximo"
+            (click)="irParaChamado(chamadoIdProximo)">
+      Próximo Chamado →
+    </button>
+  </div>
+
   <!-- CARD DETALHES DO CHAMADO -->
   <div class="card shadow-sm">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -20,7 +34,7 @@
       <div class="row mb-3 p-3 bg-light rounded border">
         <div class="col-md-6 mb-2 mb-md-0">
           <strong>Tipo:</strong>
-          <span class="badge ms-2" 
+          <span class="badge ms-2"
                 [ngClass]="chamado.tipo === 'incidente' ? 'bg-danger' : 'bg-primary'">
             {{ chamado.tipo === 'incidente' ? 'Incidente' : 'Solicitação' }}
           </span>
@@ -59,18 +73,16 @@
     <div class="card-header">
       <h5 class="mb-0">Chat</h5>
     </div>
-
     <div class="card-body chat-box" #mensagensContainer id="comentarios-box">
-
+      
       <!-- Sem comentários -->
       <div *ngIf="comentarios.length === 0" class="text-muted">
         Nenhum comentário ainda.
       </div>
 
       <!-- Lista dos comentários -->
-      <div *ngFor="let c of comentarios" class="msg" 
+      <div *ngFor="let c of comentarios" class="msg"
            [ngClass]="{ 'meu': isMeuComentario(c.autor) }">
-
         <div class="autor">{{ c.autor }}</div>
         <div class="texto">{{ c.texto }}</div>
         <div class="data">{{ c.criado_em | date:'dd/MM/yyyy HH:mm' }}</div>
