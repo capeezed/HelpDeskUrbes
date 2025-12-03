@@ -11,6 +11,7 @@ import { TecnicoGuard } from './services/tecnico-guard';
 import { FilaChamados } from './pages/admin/fila-chamados/fila-chamados';
 import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
 import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-chamado-user';
+import { Estoque } from './pages/admin/estoque/estoque'
 
 const routes: Routes = [
   { path: 'login', component: Login},
@@ -46,6 +47,14 @@ const routes: Routes = [
           { path: 'chamado/:id', component: DetalheChamado }
         ]
   },
+
+  // src/app/app-routing.module.ts ou similar
+  {
+    path: 'admin/estoque',
+    component: Estoque,
+    canActivate: [AuthGuard, TecnicoGuard] // se você tiver guard de técnico
+  },
+
 
   {
     path: '**',

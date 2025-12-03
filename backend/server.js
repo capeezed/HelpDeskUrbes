@@ -541,6 +541,122 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+//sistema de estoque 
+
+app.get('/api/estoque/itens', autenticarToken, apenasTecnicos, async (req, res) => {
+  try {
+    const [rows] = await pool.query( // <-- troquei db.execute por pool.query
+      'SELECT * FROM itens_estoque WHERE ativo = 1 ORDER BY nome'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao listar itens de estoque:', err);
+    res.status(500).json({ mensagem: 'Erro ao listar estoque.' });
+  }
+});
+
+// POST /api/estoque/itens
+app.post('/api/estoque/itens', autenticarToken, apenasTecnicos, async (req, res) => {
+  const { nome, categoria, descricao, quantidade_inicial = 0, quantidade_minima = 0, localizacao } = req.body;
+
+  if (!nome) {
+    return res.status(400).json({ mensagem: 'Nome do item é obrigatório.' });
+  }
+
+  try {
+    const [result] = await pool.query( // <-- troquei db.execute por pool.query
+      `INSERT INTO itens_estoque (nome, categoria, descricao, quantidade_atual, quantidade_minima, localizacao)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [nome, categoria, descricao, quantidade_inicial, quantidade_minima, localizacao]
+    );
+
+    res.status(201).json({ id: result.insertId });
+  } catch (err) {
+    console.error('Erro ao criar item de estoque:', err);
+    res.status(500).json({ mensagem: 'Erro ao criar item de estoque.' });
+  }
+});
+
+// POST /api/estoque/itens/:id/entrada
+app.post('/api/estoque/itens/:id/entrada', autenticarToken, apenasTecnicos, async (req, res) => {
+  const itemId = Number(req.params.id);
+  const { quantidade, observacao } = req.body;
+
+  if (!quantidade || quantidade <= 0) {
+    return res.status(400).json({ mensagem: 'Quantidade inválida.' });
+  }
+
+  const conn = await pool.getConnection(); // <-- troquei db.getConnection por pool.getConnection
+  try {
+    await conn.beginTransaction();
+
+    await conn.query(
+      'UPDATE itens_estoque SET quantidade_atual = quantidade_atual + ? WHERE id = ?',
+      [quantidade, itemId]
+    );
+
+    await conn.query(
+      `INSERT INTO movimentacoes_estoque (item_id, tipo, quantidade, observacao)
+       VALUES (?, 'entrada', ?, ?)`,
+      [itemId, quantidade, observacao || null]
+    );
+
+    await conn.commit();
+    res.json({ mensagem: 'Entrada registrada com sucesso.' });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Erro ao registrar entrada:', err);
+    res.status(500).json({ mensagem: 'Erro ao registrar entrada.' });
+  } finally {
+    conn.release();
+  }
+});
+
+// POST /api/estoque/itens/:id/saida
+app.post('/api/estoque/itens/:id/saida', autenticarToken, apenasTecnicos, async (req, res) => {
+  const itemId = Number(req.params.id);
+  const { quantidade, chamado_id, observacao } = req.body;
+
+  if (!quantidade || quantidade <= 0) {
+    return res.status(400).json({ mensagem: 'Quantidade inválida.' });
+  }
+
+  const conn = await pool.getConnection(); // <-- troquei db.getConnection por pool.getConnection
+  try {
+    await conn.beginTransaction();
+
+    const [[item]] = await conn.query(
+      'SELECT quantidade_atual FROM itens_estoque WHERE id = ? FOR UPDATE',
+      [itemId]
+    );
+    if (!item || item.quantidade_atual < quantidade) {
+      await conn.rollback();
+      return res.status(400).json({ mensagem: 'Estoque insuficiente.' });
+    }
+
+    await conn.query(
+      'UPDATE itens_estoque SET quantidade_atual = quantidade_atual - ? WHERE id = ?',
+      [quantidade, itemId]
+    );
+
+    await conn.query(
+      `INSERT INTO movimentacoes_estoque (item_id, tipo, quantidade, chamado_id, observacao)
+       VALUES (?, 'saida', ?, ?, ?)`,
+      [itemId, quantidade, chamado_id || null, observacao || null]
+    );
+
+    await conn.commit();
+    res.json({ mensagem: 'Saída registrada com sucesso.' });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Erro ao registrar saída:', err);
+    res.status(500).json({ mensagem: 'Erro ao registrar saída.' });
+  } finally {
+    conn.release();
+  }
+});
+
+
 // ======================== COMENTÁRIOS ======================
 
 /**

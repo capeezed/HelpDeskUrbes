@@ -18,6 +18,7 @@ import { NovoChamado } from './pages/user/novo-chamado/novo-chamado';
 import { FilaChamados } from './pages/admin/fila-chamados/fila-chamados';
 import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
 import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-chamado-user';
+import { Estoque } from './pages/admin/estoque/estoque';
 
 @NgModule({
   declarations: [
@@ -29,7 +30,8 @@ import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-cha
     DetalheChamado,
     DetalheChamadoUser,
     FilaChamados,
-    Secure
+    Secure,
+    Estoque
     
   ],
   imports: [

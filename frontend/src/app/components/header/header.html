@@ -28,6 +28,13 @@
         </a>
       </li>
 
+      <!-- Técnico – Estoque -->
+      <li *ngIf="authService.ehTecnico" class="nav-item">
+        <a class="nav-link" routerLink="/admin/estoque" routerLinkActive="active">
+          Estoque
+        </a>
+      </li>
+
     </ul>
 
     <div class="d-flex align-items-center">
