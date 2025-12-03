@@ -1,9 +1,52 @@
-<!-- src/app/pages/admin/estoque/estoque.html -->
-
 <app-header></app-header>
 
 <div class="container mt-4">
-  <h1 class="text-green-primary mb-3">Estoque de TI</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="text-green-primary mb-0">Estoque de TI</h1>
+    <button class="btn btn-success" (click)="abrirNovoItem()">
+      <i class="bi bi-plus-lg me-1"></i>
+      Novo item
+    </button>
+  </div>
+
+  <!-- Cards de resumo -->
+  <div class="row mb-3">
+    <div class="col-md-4 mb-2">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="text-muted mb-1">Itens cadastrados</h6>
+          <span class="fs-3 fw-bold">{{ totalItens }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-2">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="text-muted mb-1">Itens críticos (≤ mínimo)</h6>
+          <span class="fs-3 fw-bold text-danger">{{ itensCriticos }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+      <div class="flex-grow-1">
+        <input type="text"
+               class="form-control"
+               placeholder="Buscar por nome, categoria ou localização..."
+               [(ngModel)]="busca">
+      </div>
+      <div class="form-check ms-2">
+        <input class="form-check-input" type="checkbox" id="criticosCheck"
+               [(ngModel)]="mostrarApenasCriticos">
+        <label class="form-check-label" for="criticosCheck">
+          Apenas abaixo do mínimo
+        </label>
+      </div>
+    </div>
+  </div>
 
   <div *ngIf="mensagemErro" class="alert alert-danger">
     {{ mensagemErro }}
@@ -14,11 +57,11 @@
     <p class="mt-2">Carregando itens de estoque...</p>
   </div>
 
-  <div *ngIf="!isLoading && itens.length === 0" class="alert alert-info">
-    Nenhum item de estoque cadastrado.
+  <div *ngIf="!isLoading && itensFiltrados.length === 0" class="alert alert-info">
+    Nenhum item de estoque encontrado.
   </div>
 
-  <div *ngIf="!isLoading && itens.length > 0" class="card shadow-sm">
+  <div *ngIf="!isLoading && itensFiltrados.length > 0" class="card shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
@@ -28,20 +71,32 @@
             <th>Descrição</th>
             <th>Localização</th>
             <th>Qtde Atual</th>
-            <th>Qtde Mínima</th>
-            <th>Ações</th>
+            <th>Mínimo</th>
+            <th>Status</th>
+            <th style="width: 180px;">Ações</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of itens">
+          <tr *ngFor="let item of itensFiltrados">
             <td>{{ item.nome }}</td>
             <td>{{ item.categoria || '-' }}</td>
             <td>{{ item.descricao || '-' }}</td>
             <td>{{ item.localizacao || '-' }}</td>
-            <td [ngClass]="{'text-danger fw-bold': item.quantidade_atual <= item.quantidade_minima}">
-              {{ item.quantidade_atual }}
-            </td>
+            <td>{{ item.quantidade_atual }}</td>
             <td>{{ item.quantidade_minima }}</td>
+            <td>
+              <span [ngClass]="getStatusClasse(item)">
+                <ng-container *ngIf="item.quantidade_atual <= 0">
+                  Sem estoque
+                </ng-container>
+                <ng-container *ngIf="item.quantidade_atual > 0 && item.quantidade_atual <= item.quantidade_minima">
+                  Crítico
+                </ng-container>
+                <ng-container *ngIf="item.quantidade_atual > item.quantidade_minima">
+                  OK
+                </ng-container>
+              </span>
+            </td>
             <td>
               <button class="btn btn-sm btn-success me-1"
                       (click)="abrirMovimentacao(item, 'entrada')">
@@ -59,16 +114,16 @@
     </div>
   </div>
 
-  <!-- Modal simples de movimentação -->
-  <div class="modal fade show" tabindex="-1" *ngIf="mostrandoModal" style="display: block; background: rgba(0,0,0,0.5);">
-    <div class="modal-dialog">
+  <!-- Modal Movimentação -->
+  <div class="modal-backdrop-custom" *ngIf="mostrandoModalMov">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
             {{ tipoMov === 'entrada' ? 'Registrar entrada' : 'Registrar saída' }}
             - {{ itemSelecionado?.nome }}
           </h5>
-          <button type="button" class="btn-close" (click)="fecharModal()"></button>
+          <button type="button" class="btn-close" (click)="fecharModalMov()"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
@@ -83,9 +138,66 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="fecharModal()">Cancelar</button>
+          <button class="btn btn-secondary" (click)="fecharModalMov()">Cancelar</button>
           <button class="btn btn-primary" (click)="confirmarMovimentacao()">
             Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Novo Item -->
+  <div class="modal-backdrop-custom" *ngIf="mostrandoModalNovo">
+    <div class="estoque-modal-card">
+      <div class="card shadow-lg">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Novo item de estoque</h5>
+          <button type="button" class="btn-close" (click)="fecharNovoItem()"></button>
+        </div>
+
+        <div class="card-body">
+          <div class="mb-2">
+            <label class="form-label">Nome *</label>
+            <input class="form-control" [(ngModel)]="novoItem.nome">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Categoria</label>
+            <input class="form-control" [(ngModel)]="novoItem.categoria">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Descrição</label>
+            <textarea class="form-control" rows="2"
+                      [(ngModel)]="novoItem.descricao"></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <label class="form-label">Quantidade inicial</label>
+              <input type="number" min="0" class="form-control"
+                     [(ngModel)]="novoItem.quantidade_inicial">
+            </div>
+            <div class="col-md-6 mb-2">
+              <label class="form-label">Quantidade mínima</label>
+              <input type="number" min="0" class="form-control"
+                     [(ngModel)]="novoItem.quantidade_minima">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Localização</label>
+            <input class="form-control" [(ngModel)]="novoItem.localizacao">
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <button class="btn btn-secondary" (click)="fecharNovoItem()">Cancelar</button>
+          <button class="btn btn-success"
+                  [disabled]="salvandoNovo || !novoItem.nome.trim()"
+                  (click)="salvarNovoItem()">
+            <span *ngIf="!salvandoNovo">Salvar</span>
+            <span *ngIf="salvandoNovo">
+              <span class="spinner-border spinner-border-sm"></span>
+              Salvando...
+            </span>
           </button>
         </div>
       </div>

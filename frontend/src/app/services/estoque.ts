@@ -31,4 +31,16 @@ export class EstoqueService {
   registrarSaida(id: number, quantidade: number, observacao?: string) {
     return this.http.post(`${this.baseUrl}/itens/${id}/saida`, { quantidade, observacao });
   }
+
+  criarItem(dados: {
+    nome: string;
+    categoria?: string;
+    descricao?: string;
+    quantidade_inicial?: number;
+    quantidade_minima?: number;
+    localizacao?: string;
+  }) {
+    return this.http.post(`${this.baseUrl}/itens`, dados);
+  }
+
 }
