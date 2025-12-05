@@ -533,7 +533,7 @@ app.post('/api/login', async (req, res) => {
       cargo: usuario.cargo_texto
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign(payload, process.env.JWT_SECRET);
     res.json({ message: 'Login bem-sucedido!', token });
   } catch (err) {
     console.error('Erro no login:', err);
@@ -576,6 +576,53 @@ app.post('/api/estoque/itens', autenticarToken, apenasTecnicos, async (req, res)
     res.status(500).json({ mensagem: 'Erro ao criar item de estoque.' });
   }
 });
+
+// Atualizar item de estoque
+app.put('/api/estoque/itens/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nome, categoria, descricao, quantidade_minima, localizacao } = req.body;
+
+  try {
+    const campos = [];
+    const valores = [];
+
+    if (nome !== undefined) {
+      campos.push('nome = ?');
+      valores.push(nome);
+    }
+    if (categoria !== undefined) {
+      campos.push('categoria = ?');
+      valores.push(categoria);
+    }
+    if (descricao !== undefined) {
+      campos.push('descricao = ?');
+      valores.push(descricao);
+    }
+    if (quantidade_minima !== undefined) {
+      campos.push('quantidade_minima = ?');
+      valores.push(quantidade_minima);
+    }
+    if (localizacao !== undefined) {
+      campos.push('localizacao = ?');
+      valores.push(localizacao);
+    }
+
+    if (campos.length === 0) {
+      return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+    }
+
+    valores.push(id);
+
+    const sql = `UPDATE itens_estoque SET ${campos.join(', ')} WHERE id = ?`;
+    await pool.query(sql, valores);
+
+    res.json({ message: 'Item atualizado com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao atualizar item:', err);
+    res.status(500).json({ message: 'Erro ao atualizar item.' });
+  }
+});
+
 
 // POST /api/estoque/itens/:id/entrada
 app.post('/api/estoque/itens/:id/entrada', autenticarToken, apenasTecnicos, async (req, res) => {

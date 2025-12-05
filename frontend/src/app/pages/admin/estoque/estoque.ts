@@ -161,6 +161,55 @@ export class Estoque implements OnInit {
     });
   }
 
+    // Edição de item
+  itemEditando: ItemEstoque | null = null;
+  dadosEdicao = {
+    nome: '',
+    categoria: '',
+    descricao: '',
+    quantidade_minima: 0,
+    localizacao: ''
+  };
+  mostrandoModalEdicao = false;
+  salvandoEdicao = false;
+
+  // abrir modal de edição
+  abrirEdicao(item: ItemEstoque) {
+    this.itemEditando = item;
+    this.dadosEdicao = {
+      nome: item.nome,
+      categoria: item.categoria || '',
+      descricao: item.descricao || '',
+      quantidade_minima: item.quantidade_minima,
+      localizacao: item.localizacao || ''
+    };
+    this.mostrandoModalEdicao = true;
+  }
+
+  fecharEdicao() {
+    this.mostrandoModalEdicao = false;
+    this.itemEditando = null;
+  }
+
+  salvarEdicao() {
+    if (!this.itemEditando || !this.dadosEdicao.nome.trim()) return;
+
+    this.salvandoEdicao = true;
+    this.estoqueService.atualizarItem(this.itemEditando.id, this.dadosEdicao).subscribe({
+      next: () => {
+        this.salvandoEdicao = false;
+        this.mostrandoModalEdicao = false;
+        this.carregarItens();
+      },
+      error: (err) => {
+        console.error('Erro ao atualizar item:', err);
+        this.mensagemErro = 'Erro ao atualizar item de estoque.';
+        this.salvandoEdicao = false;
+      }
+    });
+  }
+
+
   // classe visual de status
   getStatusClasse(item: ItemEstoque) {
     if (item.quantidade_atual <= 0) return 'badge bg-danger';

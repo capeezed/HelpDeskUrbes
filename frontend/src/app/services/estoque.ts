@@ -43,4 +43,15 @@ export class EstoqueService {
     return this.http.post(`${this.baseUrl}/itens`, dados);
   }
 
+  atualizarItem(id: number, dados: {
+    nome?: string;
+    categoria?: string;
+    descricao?: string;
+    quantidade_minima?: number;
+    localizacao?: string;
+  }) {
+    return this.http.put(`${this.baseUrl}/itens/${id}`, dados);
+  }
+
+
 }

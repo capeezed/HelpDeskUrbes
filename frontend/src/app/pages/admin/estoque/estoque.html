@@ -2,7 +2,7 @@
 
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="text-green-primary mb-0">Estoque de TI</h1>
+    <h1 class="text-green-primary mb-0">Estoque</h1>
     <button class="btn btn-success" (click)="abrirNovoItem()">
       <i class="bi bi-plus-lg me-1"></i>
       Novo item
@@ -73,7 +73,7 @@
             <th>Qtde Atual</th>
             <th>Mínimo</th>
             <th>Status</th>
-            <th style="width: 180px;">Ações</th>
+            <th style="width: 220px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -98,6 +98,11 @@
               </span>
             </td>
             <td>
+              <button class="btn btn-sm btn-outline-secondary me-1"
+                      (click)="abrirEdicao(item)"
+                      title="Editar item">
+                <i class="bi bi-pencil"></i>
+              </button>
               <button class="btn btn-sm btn-success me-1"
                       (click)="abrirMovimentacao(item, 'entrada')">
                 Entrada
@@ -116,16 +121,17 @@
 
   <!-- Modal Movimentação -->
   <div class="modal-backdrop-custom" *ngIf="mostrandoModalMov">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
+    <div class="estoque-modal-card">
+      <div class="card shadow-lg">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
             {{ tipoMov === 'entrada' ? 'Registrar entrada' : 'Registrar saída' }}
             - {{ itemSelecionado?.nome }}
           </h5>
           <button type="button" class="btn-close" (click)="fecharModalMov()"></button>
         </div>
-        <div class="modal-body">
+
+        <div class="card-body">
           <div class="mb-3">
             <label class="form-label">Quantidade</label>
             <input type="number" min="1" class="form-control"
@@ -137,7 +143,8 @@
                       [(ngModel)]="observacao"></textarea>
           </div>
         </div>
-        <div class="modal-footer">
+
+        <div class="card-footer d-flex justify-content-end gap-2">
           <button class="btn btn-secondary" (click)="fecharModalMov()">Cancelar</button>
           <button class="btn btn-primary" (click)="confirmarMovimentacao()">
             Confirmar
@@ -195,6 +202,56 @@
                   (click)="salvarNovoItem()">
             <span *ngIf="!salvandoNovo">Salvar</span>
             <span *ngIf="salvandoNovo">
+              <span class="spinner-border spinner-border-sm"></span>
+              Salvando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar Item -->
+  <div class="modal-backdrop-custom" *ngIf="mostrandoModalEdicao">
+    <div class="estoque-modal-card">
+      <div class="card shadow-lg">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Editar item - {{ itemEditando?.nome }}</h5>
+          <button type="button" class="btn-close" (click)="fecharEdicao()"></button>
+        </div>
+
+        <div class="card-body">
+          <div class="mb-2">
+            <label class="form-label">Nome *</label>
+            <input class="form-control" [(ngModel)]="dadosEdicao.nome">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Categoria</label>
+            <input class="form-control" [(ngModel)]="dadosEdicao.categoria">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Descrição</label>
+            <textarea class="form-control" rows="2"
+                      [(ngModel)]="dadosEdicao.descricao"></textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Quantidade mínima</label>
+            <input type="number" min="0" class="form-control"
+                   [(ngModel)]="dadosEdicao.quantidade_minima">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Localização</label>
+            <input class="form-control" [(ngModel)]="dadosEdicao.localizacao">
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <button class="btn btn-secondary" (click)="fecharEdicao()">Cancelar</button>
+          <button class="btn btn-primary"
+                  [disabled]="salvandoEdicao || !dadosEdicao.nome.trim()"
+                  (click)="salvarEdicao()">
+            <span *ngIf="!salvandoEdicao">Salvar alterações</span>
+            <span *ngIf="salvandoEdicao">
               <span class="spinner-border spinner-border-sm"></span>
               Salvando...
             </span>

@@ -1,0 +1,39 @@
+.text-green-primary {
+  color: var(--green-primary);
+}
+
+/* Backdrop compartilhado por ambos os modais */
+.modal-backdrop-custom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+/* Card do modal "Novo item" */
+.estoque-modal-card {
+  max-width: 600px;
+  width: 90%;
+  margin: 2rem auto;
+}
+
+.estoque-modal-card .card {
+  border-radius: 0.75rem;
+}
+
+/* Modal de movimentação (Entrada/Saída) - Bootstrap padrão */
+.modal-backdrop-custom .modal-dialog {
+  margin: 0; /* remove margem padrão */
+}
+
+.modal-backdrop-custom .modal-content {
+  background-color: white; /* garante fundo branco */
+  border-radius: 0.75rem;
+}
