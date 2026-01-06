@@ -1,64 +1,75 @@
 <div class="container d-flex justify-content-center min-vh-100 py-5">
   <div class="card p-4 shadow-lg" style="max-width: 500px; width: 100%;">
     <div class="card-body">
+
       <div class="text-center mb-4">
-        
         <img src="assets/logo-urbes.png" alt="Logo URBES" class="img-fluid mb-3" style="max-height: 80px;">
         <h2 class="card-title text-center text-green-primary">Criar Conta</h2>
         <p class="card-subtitle text-muted">Preencha seus dados</p>
       </div>
-      
+
       <form (ngSubmit)="handleCadastro()">
-        
-        <!-- Nome Completo -->
+
         <div class="mb-3">
           <label for="nome" class="form-label">Nome Completo:</label>
           <input id="nome" type="text" class="form-control" [(ngModel)]="nomeCompleto" name="nome" required>
         </div>
 
-        <!-- Email -->
         <div class="mb-3">
           <label for="email" class="form-label">Email:</label>
           <input id="email" type="email" class="form-control" [(ngModel)]="email" name="email" required>
         </div>
 
-        <!-- MUDANÇA AQUI: Setor e Cargo como inputs de texto -->
         <div class="row">
           <div class="col-md-6 mb-3">
             <label for="setor" class="form-label">Setor:</label>
-            <input id="setor" type="text" class="form-control" [(ngModel)]="setor" name="setor" placeholder="Ex: SSA" required>
+            <input id="setor" type="text" class="form-control" [(ngModel)]="setor" name="setor" required>
           </div>
           <div class="col-md-6 mb-3">
             <label for="cargo" class="form-label">Cargo:</label>
-            <input id="cargo" type="text" class="form-control" [(ngModel)]="cargo" name="cargo" placeholder="Ex: Auxiliar" required>
+            <input id="cargo" type="text" class="form-control" [(ngModel)]="cargo" name="cargo" required>
           </div>
         </div>
 
-        <!-- Senha -->
         <div class="mb-3">
           <label for="password" class="form-label">Senha:</label>
-          <input id="password" type="password" class="form-control" [(ngModel)]="password" name="password" required>
+          <input
+            id="password"
+            type="password"
+            class="form-control"
+            [(ngModel)]="password"
+            name="password"
+            minlength="8"
+            maxlength="32"
+            pattern="^(?=.*[!@#$%^&*()_\-+=\[{\]};:'&quot;,.<>\/?]).*$"
+            required
+          >
         </div>
 
-        <!-- Confirmar Senha -->
         <div class="mb-3">
           <label for="confirmPassword" class="form-label">Confirmar Senha:</label>
-          <input id="confirmPassword" type="password" class="form-control" [(ngModel)]="confirmPassword" name="confirmPassword" required>
+          <input
+            id="confirmPassword"
+            type="password"
+            class="form-control"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            required
+          >
         </div>
 
-        <!-- Botão de Submit (com lógica de loading) -->
         <button type="submit" class="btn btn-primary w-100 mb-3" [disabled]="isLoading">
           <span *ngIf="!isLoading">Criar Conta</span>
           <span *ngIf="isLoading">
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span class="spinner-border spinner-border-sm"></span>
             Carregando...
           </span>
         </button>
 
-        <!-- Mensagens -->
         <p *ngIf="mensagemErro" class="alert alert-danger text-center">
           {{ mensagemErro }}
         </p>
+
         <p *ngIf="mensagemSucesso" class="alert alert-success text-center">
           {{ mensagemSucesso }}
         </p>
@@ -66,9 +77,11 @@
 
       <div class="text-center mt-3">
         <p class="mb-0">
-          Já tem uma conta? <a routerLink="/login" class="text-green-primary">Faça o login</a>
+          Já tem uma conta?
+          <a routerLink="/login" class="text-green-primary">Faça o login</a>
         </p>
       </div>
+
     </div>
   </div>
 </div>

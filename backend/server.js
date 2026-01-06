@@ -458,38 +458,53 @@ app.post('/api/chamados/:id/relatorio', autenticarToken, apenasTecnicos, async (
  * POST /api/register
  */
 app.post('/api/register', async (req, res) => {
-  const { email, pass, nomeCompleto, setor, cargo } = req.body;
+  const { email, pass, nomeCompleto, setor, cargo } = req.body
+
   if (!email || !pass || !nomeCompleto || !setor || !cargo) {
-    return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+    return res.status(400).json({ message: 'Todos os campos são obrigatórios.' })
   }
-  const connection = await pool.getConnection();
+
+  const senhaRegex = /^(?=.*[!@#$%^&*()_\-+=\[{\]};:'",.<>\/?]).{8,32}$/
+  if (!senhaRegex.test(pass)) {
+    return res.status(400).json({
+      message: 'A senha deve ter entre 8 e 32 caracteres e conter ao menos um caractere especial.'
+    })
+  }
+
+  const connection = await pool.getConnection()
+
   try {
-    await connection.beginTransaction();
-    const salt = await bcrypt.genSalt(10);
-    const senhaHash = await bcrypt.hash(pass, salt);
+    await connection.beginTransaction()
+
+    const salt = await bcrypt.genSalt(10)
+    const senhaHash = await bcrypt.hash(pass, salt)
 
     const [userResult] = await connection.query(
       'INSERT INTO usuarios (email, senha_hash) VALUES (?, ?)',
       [email, senhaHash]
-    );
-    const novoUsuarioId = userResult.insertId;
+    )
+
+    const novoUsuarioId = userResult.insertId
 
     await connection.query(
       'INSERT INTO perfis (id, nome_completo, setor_texto, cargo_texto) VALUES (?, ?, ?, ?)',
       [novoUsuarioId, nomeCompleto, setor, cargo]
-    );
+    )
 
-    await connection.commit();
-    res.status(201).json({ message: 'Usuário criado com sucesso!', userId: novoUsuarioId });
+    await connection.commit()
+
+    res.status(201).json({
+      message: 'Usuário criado com sucesso!',
+      userId: novoUsuarioId
+    })
   } catch (err) {
-    await connection.rollback();
+    await connection.rollback()
     if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ message: 'Este email já está cadastrado.' });
+      return res.status(409).json({ message: 'Este email já está cadastrado.' })
     }
-    console.error('Erro ao registrar usuário:', err);
-    res.status(500).json({ message: 'Erro interno no servidor.' });
+    res.status(500).json({ message: 'Erro interno no servidor.' })
   } finally {
-    connection.release();
+    connection.release()
   }
 });
 

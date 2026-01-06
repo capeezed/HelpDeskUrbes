@@ -77,7 +77,7 @@
       
       <!-- Sem comentários -->
       <div *ngIf="comentarios.length === 0" class="text-muted">
-        Nenhum comentário ainda.
+        Nenhuma mensagem ainda.
       </div>
 
       <!-- Lista dos comentários -->
@@ -92,7 +92,7 @@
       <textarea class="form-control mt-3"
                 [(ngModel)]="novoComentario"
                 rows="3"
-                placeholder="Escreva um comentário..."
+                placeholder="Escreva uma mensagem..."
                 (keydown.enter)="enviarComentario(); $event.preventDefault()"></textarea>
 
       <button class="btn btn-success mt-2 w-100"
