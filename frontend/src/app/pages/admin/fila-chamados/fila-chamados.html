@@ -27,6 +27,14 @@
       <button 
         type="button" 
         class="btn"
+        [class.btn-primary]="(filtroAtual$ | async) === 'pendente'"
+        [class.btn-outline-primary]="(filtroAtual$ | async) !== 'pendente'"
+        (click)="mudarFiltro('pendente')">
+        Pendentes
+      </button>
+      <button 
+        type="button" 
+        class="btn"
         [class.btn-primary]="(filtroAtual$ | async) === 'fechado'"
         [class.btn-outline-primary]="(filtroAtual$ | async) !== 'fechado'"
         (click)="mudarFiltro('fechado')">
