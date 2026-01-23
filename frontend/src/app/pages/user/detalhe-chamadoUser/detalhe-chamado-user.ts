@@ -2,7 +2,7 @@
 
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, switchMap, of, catchError } from 'rxjs';
+import { Observable, switchMap, of, catchError, map } from 'rxjs';
 import { Chamado, ChamadoService } from '../../../services/chamado';
 import { ComentariosService } from '../../../services/comentarios';
 import { AuthService } from '../../../services/auth.service';
@@ -26,16 +26,39 @@ export class DetalheChamadoUser implements OnInit, OnDestroy {
 
   @ViewChild('mensagensContainer') mensagensContainer!: ElementRef<HTMLDivElement>;
 
+  // ===================== SOCKET HANDLERS =====================
+
   private novoComentarioHandler = (payload: any) => {
     if (Number(payload?.chamadoId) !== this.chamadoId) return;
+
     this.comentarios.push({
       texto: payload.texto,
       autor: payload.autor,
       autor_nivel: payload.autor_nivel,
       criado_em: payload.criado_em
     });
+
     queueMicrotask(() => this.scrollToBottom());
   };
+
+  private chamadoAtribuidoHandler = (payload: any) => {
+    if (Number(payload?.chamadoId) !== this.chamadoId) return;
+
+    this.chamado$ = this.chamado$.pipe(
+      map(chamado => {
+        if (!chamado) return chamado;
+
+        return {
+          ...chamado,
+          status: 'em_andamento',
+          tecnico_atribuido_nome: payload.tecnicoNome || chamado.tecnico_atribuido_nome,
+          atribuido_para_id: payload.tecnicoId || chamado.atribuido_para_id
+        };
+      })
+    );
+  };
+
+  // ============================================================
 
   constructor(
     private route: ActivatedRoute,
@@ -44,22 +67,31 @@ export class DetalheChamadoUser implements OnInit, OnDestroy {
     private comentariosService: ComentariosService,
     public authService: AuthService,
     private ws: WebsocketService,
-    private navService: NavegacaoChamadosService // NOVO
+    private navService: NavegacaoChamadosService
   ) {}
 
   ngOnInit(): void {
     this.chamadoId = Number(this.route.snapshot.paramMap.get('id'));
+
     this.carregarChamado();
     this.carregarComentarios();
+
+    // Comentários em tempo real
     this.ws.offNovoComentario(this.novoComentarioHandler);
     this.ws.onNovoComentario(this.novoComentarioHandler);
+
+    // Atribuição em tempo real
+    this.ws.offChamadoAtribuido(this.chamadoAtribuidoHandler);
+    this.ws.onChamadoAtribuido(this.chamadoAtribuidoHandler);
   }
 
   ngOnDestroy(): void {
     this.ws.offNovoComentario(this.novoComentarioHandler);
+    this.ws.offChamadoAtribuido(this.chamadoAtribuidoHandler);
   }
 
-  // NOVO: Usa o serviço para obter IDs anterior e próximo
+  // ===================== NAVEGAÇÃO =====================
+
   get chamadoIdAnterior() {
     return this.navService.getAnteriorId(this.chamadoId);
   }
@@ -74,18 +106,28 @@ export class DetalheChamadoUser implements OnInit, OnDestroy {
     }
   }
 
+  // ===================== UI =====================
+
   scrollToBottom() {
     const box = this.mensagensContainer?.nativeElement;
     if (box) box.scrollTop = box.scrollHeight;
   }
+
+  isMeuComentario(autor: string): boolean {
+    return autor === this.authService.usuarioAtual?.nome_completo;
+  }
+
+  // ===================== DATA =====================
 
   carregarChamado(): void {
     this.chamado$ = this.route.paramMap.pipe(
       switchMap(params => {
         const id = Number(params.get('id'));
         if (!id) return of(null);
-        this.chamadoId = id; // Atualiza o ID ao navegar
-        this.carregarComentarios(); // Recarrega comentários ao mudar de chamado
+
+        this.chamadoId = id;
+        this.carregarComentarios();
+
         return this.chamadoService.getChamadoById(id);
       }),
       catchError(() => {
@@ -96,21 +138,22 @@ export class DetalheChamadoUser implements OnInit, OnDestroy {
   }
 
   carregarComentarios(): void {
-    this.comentariosService.getComentarios(this.chamadoId)
-      .subscribe({
-        next: (res) => {
-          this.comentarios = res;
-          queueMicrotask(() => this.scrollToBottom());
-        },
-        error: (err) => {
-          this.mensagemErro = 'Erro ao carregar comentários.';
-        }
-      });
+    this.comentariosService.getComentarios(this.chamadoId).subscribe({
+      next: res => {
+        this.comentarios = res;
+        queueMicrotask(() => this.scrollToBottom());
+      },
+      error: () => {
+        this.mensagemErro = 'Erro ao carregar comentários.';
+      }
+    });
   }
 
   enviarComentario(): void {
     if (!this.novoComentario.trim()) return;
+
     this.isLoadingComentario = true;
+
     this.comentariosService.enviarComentario(this.chamadoId, this.novoComentario).subscribe({
       next: () => {
         this.novoComentario = '';
@@ -121,9 +164,5 @@ export class DetalheChamadoUser implements OnInit, OnDestroy {
         alert('Erro ao enviar comentário.');
       }
     });
-  }
-
-  isMeuComentario(autor: string): boolean {
-    return autor === this.authService.usuarioAtual?.nome_completo;
   }
 }

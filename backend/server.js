@@ -733,7 +733,7 @@ app.get('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
   const usuario = req.usuario;
 
   try {
-    // Funcionário só pode ver se o chamado é dele
+    //  Funcionário só pode ver se o chamado é dele
     if (usuario.nivel === 'funcionario') {
       const [[own]] = await pool.query(
         'SELECT 1 FROM chamados WHERE id = ? AND criado_por_id = ? LIMIT 1',

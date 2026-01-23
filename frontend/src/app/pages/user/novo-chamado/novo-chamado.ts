@@ -47,6 +47,7 @@ export class NovoChamado {
         "Outlook não funciona",
         "Problemas com vírus",
         "Problemas de VPN",
+        "Problema relacionado a bilhetagem",
         "Ramal não funciona",
         "Sem Internet/Rede"
       ];
