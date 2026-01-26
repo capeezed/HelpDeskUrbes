@@ -1,0 +1,52 @@
+<app-header></app-header>
+
+<div class="container mt-4">
+  <h1 class="text-green-primary mb-4">Mural de Avisos</h1>
+
+  <!-- CARD DE CRIAÇÃO -->
+  <div class="card p-3 mb-4 shadow-sm">
+    <input 
+      class="form-control mb-2" 
+      [(ngModel)]="titulo" 
+      placeholder="Título do aviso">
+
+    <textarea 
+      class="form-control mb-2" 
+      [(ngModel)]="mensagem" 
+      placeholder="Mensagem do aviso"></textarea>
+
+    <select class="form-select mb-3" [(ngModel)]="tipo">
+      <option value="info">Informativo</option>
+      <option value="alerta">Alerta</option>
+      <option value="critico">Crítico</option>
+    </select>
+
+    <!-- 👇 AQUI ESTÁ A CORREÇÃO -->
+    <button 
+      type="button"
+      class="btn btn-success w-100"
+      (click)="criar()">
+      Publicar aviso
+    </button>
+  </div>
+
+  <!-- LISTA DE AVISOS -->
+  <div *ngFor="let aviso of avisos" 
+       class="alert shadow-sm"
+       [ngClass]="{
+         'alert-info': aviso.tipo === 'info',
+         'alert-warning': aviso.tipo === 'alerta',
+         'alert-danger': aviso.tipo === 'critico'
+       }">
+
+    <strong>{{ aviso.titulo }}</strong><br>
+    {{ aviso.mensagem }}
+
+    <button 
+      type="button"
+      class="btn btn-sm btn-danger float-end"
+      (click)="remover(aviso.id)">
+      X
+    </button>
+  </div>
+</div>

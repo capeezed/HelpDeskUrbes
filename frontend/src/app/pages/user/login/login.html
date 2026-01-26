@@ -1,62 +1,83 @@
-<div class="container d-flex justify-content-center min-vh-100 py-5">
-  <div class="card p-4 shadow-lg" style="max-width: 400px; width: 100%;">
-    <div class="card-body">
-      <div class="text-center mb-4">
-        
-        <img src="assets/logo-urbes.png" alt="Logo URBES" class="img-fluid mb-3" style="max-height: 80px;">
-        <h2 class="card-title text-center text-green-primary">TI DESK</h2>
-        <p class="card-subtitle text-muted">Acesse sua conta para abrir chamados</p>
-      </div>
-      
-      <form (ngSubmit)="handleLogin()">
-        
-        <div class="mb-3">
-          <label for="email" class="form-label">Email:</label>
-          <input 
-            id="email"
-            type="email" 
-            class="form-control"
-            placeholder="seu.email@urbes.com.br"
-            [(ngModel)]="email"
-            name="email"
-            required
-          >
-        </div>
-        
-        <div class="mb-3">
-          <label for="password" class="form-label">Senha:</label>
-          <input 
-            id="password"
-            type="password"
-            class="form-control"
-            placeholder="Sua senha"
-            [(ngModel)]="password"
-            name="password"
-            required
-          >
-        </div>
+<div class="container-fluid min-vh-100 d-flex align-items-center">
+  <div class="row w-100 justify-content-center">
 
-        <!-- Botão de login -->
-        <button type="submit" class="btn btn-primary w-100 mb-3" [disabled]="isLoading">
-          <span *ngIf="!isLoading">Entrar</span>
-          <span *ngIf="isLoading">
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            Carregando...
-          </span>
-        </button>
+    <!-- COLUNA DO LOGIN -->
+    <div class="col-md-4">
+      <div class="card p-4 shadow-lg">
+        <div class="card-body">
 
-        <!-- Mensagem de erro -->
-        <div *ngIf="mensagemErro" class="alert alert-danger" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          {{ mensagemErro }}
+          <div class="text-center mb-4">
+            <img src="assets/logo-urbes.png" class="img-fluid mb-3" style="max-height: 80px;">
+            <h2 class="text-green-primary">TI DESK</h2>
+            <p class="text-muted">Acesse sua conta</p>
+          </div>
+
+          <form (ngSubmit)="handleLogin()">
+            <div class="mb-3">
+              <label>Email</label>
+              <input
+                type="email"
+                class="form-control"
+                [(ngModel)]="email"
+                name="email"
+                required>
+            </div>
+
+            <div class="mb-3">
+              <label>Senha</label>
+              <input
+                type="password"
+                class="form-control"
+                [(ngModel)]="password"
+                name="password"
+                required>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100" [disabled]="isLoading">
+              <span *ngIf="!isLoading">Entrar</span>
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm"></span>
+            </button>
+
+            <div *ngIf="mensagemErro" class="alert alert-danger mt-3">
+              {{ mensagemErro }}
+            </div>
+          </form>
+
+          <!-- LINK DE CADASTRO (voltou 😎) -->
+          <div class="text-center mt-3">
+            <p class="mb-0">
+              Não tem uma conta?
+              <a routerLink="/cadastro" class="text-green-primary fw-semibold">
+                Cadastre-se aqui
+              </a>
+            </p>
+          </div>
+
         </div>
-      </form>
-
-      <div class="text-center mt-3">
-        <p class="mb-0">
-          Não tem uma conta? <a routerLink="/cadastro" class="text-green-primary">Cadastre-se aqui</a>
-        </p>
       </div>
     </div>
+
+    <!-- COLUNA DO MURAL -->
+    <div class="col-md-6 ms-md-4 mural-container">
+      <div class="card mural-card p-3 shadow-sm">
+        <h4 class="mb-3">📢 Avisos Gerais</h4>
+
+        <div *ngIf="avisos.length === 0" class="text-muted">
+          Nenhum aviso no momento.
+        </div>
+
+        <div *ngFor="let aviso of avisos"
+             class="mural-aviso"
+             [ngClass]="{
+               'mural-info': aviso.tipo === 'info',
+               'mural-alerta': aviso.tipo === 'alerta',
+               'mural-critico': aviso.tipo === 'critico'
+             }">
+          <strong>{{ aviso.titulo }}</strong><br>
+          {{ aviso.mensagem }}
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>

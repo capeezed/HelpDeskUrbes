@@ -41,6 +41,12 @@
         </a>
       </li>
 
+      <li *ngIf="authService.ehTecnico" class="nav-item">
+        <a class="nav-link" routerLink="/admin/admin-avisos" routerLinkActive="active">
+          Avisos
+        </a>
+      </li>
+
     </ul>
 
     <div class="d-flex align-items-center">

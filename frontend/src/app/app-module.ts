@@ -20,6 +20,7 @@ import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
 import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-chamado-user';
 import { Estoque } from './pages/admin/estoque/estoque';
 import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
+import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
 
 @NgModule({
   declarations: [
@@ -33,7 +34,8 @@ import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
     FilaChamados,
     Secure,
     Estoque,
-    AdminUsuarios
+    AdminUsuarios,
+    AdminAvisos
     
   ],
   imports: [

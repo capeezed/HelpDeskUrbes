@@ -169,6 +169,18 @@ app.get('/api/chamados', autenticarToken, async (req, res) => {
   }
 });
 
+app.get('/api/avisos-publicos', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, titulo, mensagem, tipo FROM avisos WHERE ativo = 1 ORDER BY criado_em DESC"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Erro ao buscar avisos.' });
+  }
+});
+
 
 /**
  * GET /api/chamado/:id
@@ -290,6 +302,31 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
   }
 });
 
+app.post('/api/admin/avisos', autenticarToken, async (req, res) => {
+  try {
+    if (!['tecnico','admin'].includes(req.usuario.nivel)) {
+      return res.status(403).json({ message: 'Acesso negado.' });
+    }
+
+    const { titulo, mensagem, tipo } = req.body;
+
+    if (!titulo || !mensagem) {
+      return res.status(400).json({ message: 'Título e mensagem são obrigatórios.' });
+    }
+
+    await pool.query(
+      'INSERT INTO avisos (titulo, mensagem, tipo) VALUES (?, ?, ?)',
+      [titulo, mensagem, tipo || 'info']
+    );
+
+    res.status(201).json({ message: 'Aviso criado com sucesso.' });
+  } catch (err) {
+    console.error("Erro ao criar aviso:", err);
+    res.status(500).json({ message: 'Erro interno ao salvar o aviso.' });
+  }
+});
+
+
 /**
  * PUT /api/chamados/:id/atribuir
  * - Técnico/Admin
@@ -346,6 +383,22 @@ app.put('/api/chamados/:id/atribuir', autenticarToken, apenasTecnicos, async (re
   }
 });
 
+app.put('/api/admin/avisos/:id', autenticarToken, async (req, res) => {
+  if (!['tecnico','admin'].includes(req.usuario.nivel)) {
+    return res.status(403).json({ message: 'Acesso negado.' });
+  }
+
+  const { titulo, mensagem, tipo, ativo } = req.body;
+
+  await pool.query(
+    'UPDATE avisos SET titulo=?, mensagem=?, tipo=?, ativo=? WHERE id=?',
+    [titulo, mensagem, tipo, ativo, req.params.id]
+  );
+
+  res.json({ message: 'Aviso atualizado.' });
+});
+
+
 /**
  * PUT /api/chamados/:id/status
  * - Técnico/Admin
@@ -390,6 +443,52 @@ app.put('/api/chamados/:id/prioridade', autenticarToken, apenasTecnicos, async (
     res.status(500).json({ message: 'Erro ao alterar prioridade' });
   }
 });
+
+app.delete('/api/admin/avisos/:id', autenticarToken, async (req, res) => {
+  if (!['tecnico','admin'].includes(req.usuario.nivel)) {
+    return res.status(403).json({ message: 'Acesso negado.' });
+  }
+
+  await pool.query('DELETE FROM avisos WHERE id = ?', [req.params.id]);
+  res.json({ message: 'Aviso removido.' });
+});
+
+app.get('/api/avisos-publicos', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, titulo, mensagem, tipo
+      FROM avisos
+      WHERE ativo = 1
+      ORDER BY criado_em DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar avisos públicos:', err);
+    res.status(500).json({ message: 'Erro ao buscar avisos.' });
+  }
+});
+
+app.get('/api/admin/avisos', autenticarToken, async (req, res) => {
+  if (!['tecnico','admin'].includes(req.usuario.nivel)) {
+    return res.status(403).json({ message: 'Acesso negado.' });
+  }
+
+  try {
+    const [rows] = await pool.query(`
+      SELECT *
+      FROM avisos
+      ORDER BY criado_em DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar avisos admin:', err);
+    res.status(500).json({ message: 'Erro ao buscar avisos.' });
+  }
+});
+
+
 
 // ======================== RELATÓRIOS (técnico) =============
 

@@ -13,6 +13,7 @@ import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
 import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-chamado-user';
 import { Estoque } from './pages/admin/estoque/estoque'
 import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
+import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
 
 const routes: Routes = [
   { path: 'login', component: Login},
@@ -59,6 +60,12 @@ const routes: Routes = [
   {
     path: 'admin/usuarios',
     component: AdminUsuarios,
+    canActivate: [AuthGuard, TecnicoGuard]
+  },
+
+  {
+    path: 'admin/admin-avisos',
+    component: AdminAvisos,
     canActivate: [AuthGuard, TecnicoGuard]
   },
 
