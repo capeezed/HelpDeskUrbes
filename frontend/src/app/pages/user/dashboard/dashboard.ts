@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs';
+
 // 1. Caminho do serviço corrigido
 import { Chamado, ChamadoService } from '../../../services/chamado';
 
@@ -18,9 +20,13 @@ export class Dashboard implements OnInit {
   constructor(private chamadoService: ChamadoService) { }
 
   ngOnInit(): void {
-    // Esta linha agora funciona, pois os tipos (Observable) batem
-    this.chamados$ = this.chamadoService.getMeusChamados();
-  }
+  this.chamados$ = this.chamadoService
+    .getMeusChamados('', 1, 5) // <-- IMPORTANTE
+    .pipe(
+      map(res => res.data)
+    );
+}
+
 
   // 5. Função para retornar classes CSS do Bootstrap baseadas no status
   getStatusClass(status: string | undefined) {

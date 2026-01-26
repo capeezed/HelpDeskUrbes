@@ -1,47 +1,53 @@
 <!-- src/app/pages/admin/fila-chamados/fila-chamados.component.html -->
+
 <app-header></app-header>
+
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="text-green-primary">Fila de Atendimento - TI</h1>
   </div>
 
-  <!-- BLOCO DE FILTROS (CORRIGIDO) -->
+  <!-- ===================== FILTROS ===================== -->
   <div class="mb-3">
     <div class="btn-group" role="group" aria-label="Filtro de Status">
-      <button 
-        type="button" 
+      <button
+        type="button"
         class="btn"
         [class.btn-primary]="(filtroAtual$ | async) === 'aberto'"
         [class.btn-outline-primary]="(filtroAtual$ | async) !== 'aberto'"
         (click)="mudarFiltro('aberto')">
         Abertos
       </button>
-      <button 
-        type="button" 
+
+      <button
+        type="button"
         class="btn"
         [class.btn-primary]="(filtroAtual$ | async) === 'em_andamento'"
         [class.btn-outline-primary]="(filtroAtual$ | async) !== 'em_andamento'"
         (click)="mudarFiltro('em_andamento')">
         Em Andamento
       </button>
-      <button 
-        type="button" 
+
+      <button
+        type="button"
         class="btn"
         [class.btn-primary]="(filtroAtual$ | async) === 'pendente'"
         [class.btn-outline-primary]="(filtroAtual$ | async) !== 'pendente'"
         (click)="mudarFiltro('pendente')">
         Pendentes
       </button>
-      <button 
-        type="button" 
+
+      <button
+        type="button"
         class="btn"
         [class.btn-primary]="(filtroAtual$ | async) === 'fechado'"
         [class.btn-outline-primary]="(filtroAtual$ | async) !== 'fechado'"
         (click)="mudarFiltro('fechado')">
         Fechados
       </button>
-      <button 
-        type="button" 
+
+      <button
+        type="button"
         class="btn"
         [class.btn-primary]="(filtroAtual$ | async) === ''"
         [class.btn-outline-primary]="(filtroAtual$ | async) !== ''"
@@ -51,34 +57,35 @@
     </div>
   </div>
 
-  <!-- Usamos o 'chamados$' e o 'async' pipe -->
+  <!-- ===================== LISTA ===================== -->
   <div *ngIf="chamados$ | async as chamados; else loading">
-    
-    <!-- Se não houver chamados -->
+
+    <!-- Sem chamados -->
     <div *ngIf="chamados.length === 0" class="alert alert-info">
       Não há nenhum chamado na fila no momento. Bom trabalho!
     </div>
 
-    <!-- Tabela de Chamados -->
+    <!-- Tabela -->
     <div *ngIf="chamados.length > 0" class="card shadow-sm">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th scope="col">Status</th>
-              <th scope="col">Título</th>
-              <th scope="col">Solicitante</th>
-              <th scope="col">Data/Hora</th> <!-- NOVA COLUNA -->
-              <th scope="col">Prioridade</th>
-              <th scope="col">Ações</th>
+              <th>Status</th>
+              <th>Título</th>
+              <th>Solicitante</th>
+              <th>Data/Hora</th>
+              <th>Prioridade</th>
+              <th>Ações</th>
             </tr>
           </thead>
+
           <tbody>
-            <tr *ngFor="let chamado of chamados">
-              
+            <tr *ngFor="let chamado of chamados; trackBy: trackById">
               <!-- Status -->
               <td>
-                <span class="badge rounded-pill fs-6" [ngClass]="getStatusClass(chamado.status)">
+                <span class="badge rounded-pill fs-6"
+                      [ngClass]="getStatusClass(chamado.status)">
                   {{ chamado.status | titlecase }}
                 </span>
               </td>
@@ -87,23 +94,27 @@
               <td>{{ chamado.titulo }}</td>
 
               <!-- Solicitante -->
-              <td>{{ chamado.solicitante_nome || 'Usuário ID: ' + chamado.criado_por_id }}</td>
+              <td>
+                {{ chamado.solicitante_nome || ('Usuário ID: ' + chamado.criado_por_id) }}
+              </td>
 
-              <!-- Data/Hora de criação (NOVA COLUNA) -->
+              <!-- Data -->
               <td>
                 <small>{{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}</small>
               </td>
 
               <!-- Prioridade -->
               <td>
-                <span class="badge" [ngClass]="getPrioridadeClass(chamado.prioridade)">
+                <span class="badge"
+                      [ngClass]="getPrioridadeClass(chamado.prioridade)">
                   {{ chamado.prioridade | titlecase }}
                 </span>
               </td>
 
               <!-- Ações -->
               <td>
-                <a [routerLink]="['/admin/chamado', chamado.id]" class="btn btn-outline-primary btn-sm">
+                <a [routerLink]="['/admin/chamado', chamado.id]"
+                   class="btn btn-outline-primary btn-sm">
                   Ver Detalhes
                 </a>
               </td>
@@ -112,15 +123,37 @@
         </table>
       </div>
     </div>
+
+    <!-- ===================== PAGINAÇÃO ===================== -->
+    <div *ngIf="totalPages > 1"
+         class="d-flex justify-content-between align-items-center mt-3">
+
+      <button class="btn btn-outline-secondary"
+              (click)="paginaAnterior()"
+              [disabled]="page <= 1">
+        ← Anterior
+      </button>
+
+      <span class="fw-semibold">
+        Página {{ page }} de {{ totalPages }}
+      </span>
+
+      <button class="btn btn-outline-secondary"
+              (click)="proximaPagina()"
+              [disabled]="page >= totalPages">
+        Próxima →
+      </button>
+    </div>
+
   </div>
 
-  <!-- Template de "Carregando..." -->
+  <!-- ===================== LOADING ===================== -->
   <ng-template #loading>
     <div class="text-center mt-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Carregando...</span>
       </div>
-      <p>Buscando todos os chamados...</p>
+      <p>Buscando chamados...</p>
     </div>
   </ng-template>
 </div>

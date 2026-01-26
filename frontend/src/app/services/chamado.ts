@@ -41,17 +41,36 @@ export class ChamadoService {
 
   constructor(private http: HttpClient, private authService: AuthService) { }
 
-  getMeusChamados(status?: string): Observable<Chamado[]> {
-    let httpParams = new HttpParams();
+  getMeusChamados(
+  status: string | undefined,
+  page: number = 1,
+  limit: number = 20
+): Observable<{
+  data: Chamado[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}> {
+  let httpParams = new HttpParams()
+    .set('page', page)
+    .set('limit', limit);
 
-    if (status) {
-      httpParams = httpParams.set('status', status);
-    }
-    
-    return this.http.get<Chamado[]>(`${this.apiUrl}/chamados`, { 
-      params: httpParams 
-    });
+  if (status) {
+    httpParams = httpParams.set('status', status);
   }
+
+  return this.http.get<{
+    data: Chamado[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  }>(`${this.apiUrl}/chamados`, {
+    params: httpParams
+  });
+}
+
 
   criarChamado(formData: FormData): Observable<any> {
     return this.http.post(`${this.apiUrl}/chamado`, formData);

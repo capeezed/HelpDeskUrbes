@@ -121,37 +121,54 @@ app.get('/api/chamados', autenticarToken, async (req, res) => {
   const usuario = req.usuario;
   const { status } = req.query;
 
+  const page = Number(req.query.page || 1);
+  const limit = Number(req.query.limit || 20);
+  const offset = (page - 1) * limit;
+
   try {
-    let sql;
     const params = [];
-    const baseQuery = `
-      SELECT 
-        c.*, 
+    let sql = `
+      SELECT SQL_CALC_FOUND_ROWS
+        c.*,
         p.nome_completo AS solicitante_nome
       FROM chamados c
       JOIN perfis p ON c.criado_por_id = p.id
     `;
+
     const conditions = [];
 
     if (!(usuario.nivel === 'tecnico' || usuario.nivel === 'admin')) {
       conditions.push('c.criado_por_id = ?');
       params.push(usuario.id);
     }
+
     if (status) {
       conditions.push('c.status = ?');
       params.push(status);
     }
 
-    sql = baseQuery + (conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '');
-    sql += ' ORDER BY c.criado_em DESC';
+    if (conditions.length) {
+      sql += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    sql += ' ORDER BY c.criado_em DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
 
     const [rows] = await pool.query(sql, params);
-    res.json(rows);
+    const [[{ 'FOUND_ROWS()': total }]] = await pool.query('SELECT FOUND_ROWS()');
+
+    res.json({
+      data: rows,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (err) {
-    console.error('Erro ao buscar chamados:', err);
-    res.status(500).json({ message: 'Erro ao buscar dados' });
+    res.status(500).json({ message: 'Erro ao buscar chamados' });
   }
 });
+
 
 /**
  * GET /api/chamado/:id
@@ -638,6 +655,33 @@ app.put('/api/estoque/itens/:id', async (req, res) => {
   }
 });
 
+// PUT /api/admin/usuarios/:id/nivel
+app.put('/api/admin/usuarios/:id/nivel', autenticarToken, async (req, res) => {
+  if (req.usuario.nivel !== 'tecnico') {
+    return res.status(403).json({ message: 'Acesso negado.' });
+  }
+
+  const userId = Number(req.params.id);
+  const { nivel } = req.body;
+
+  if (!['funcionario', 'tecnico'].includes(nivel)) {
+    return res.status(400).json({ message: 'Nível inválido.' });
+  }
+
+  try {
+    await pool.query(
+      'UPDATE perfis SET nivel = ? WHERE id = ?',
+      [nivel, userId]
+    );
+
+    res.json({ message: 'Perfil atualizado com sucesso.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Erro ao atualizar perfil.' });
+  }
+});
+
+
 
 // POST /api/estoque/itens/:id/entrada
 app.post('/api/estoque/itens/:id/entrada', autenticarToken, apenasTecnicos, async (req, res) => {
@@ -758,6 +802,22 @@ app.get('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
     res.status(500).json({ message: 'Erro ao buscar comentários' });
   }
 });
+
+app.get('/api/admin/usuarios', autenticarToken, async (req, res) => {
+  if (req.usuario.nivel !== 'tecnico') {
+    return res.status(403).json({ message: 'Acesso negado.' });
+  }
+
+  const [rows] = await pool.query(`
+    SELECT u.id, u.email, p.nome_completo, p.nivel
+    FROM usuarios u
+    JOIN perfis p ON u.id = p.id
+    ORDER BY p.nome_completo
+  `);
+
+  res.json(rows);
+});
+
 
 // POST /api/chamados/:id/comentarios
 // Cria comentário e emite via WebSocket

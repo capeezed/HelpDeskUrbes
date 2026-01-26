@@ -1,0 +1,53 @@
+<app-header></app-header>
+
+<div class="container mt-4">
+  <h1 class="text-green-primary mb-4">Gerenciar Usuários</h1>
+
+  <div *ngIf="mensagem" class="alert alert-success text-center">
+    {{ mensagem }}
+  </div>
+
+  <div *ngIf="carregando" class="text-center">
+    <div class="spinner-border text-primary"></div>
+    <p>Carregando usuários...</p>
+  </div>
+
+  <div class="card shadow-sm" *ngIf="!carregando">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Nível</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of usuarios">
+            <td>{{ u.nome_completo }}</td>
+            <td>{{ u.email }}</td>
+            <td>
+              <span class="badge" [ngClass]="getNivelClass(u.nivel)">
+                {{ u.nivel | titlecase }}
+              </span>
+            </td>
+            <td>
+              <button *ngIf="u.nivel === 'funcionario'"
+                      class="btn btn-warning btn-sm"
+                      (click)="alterarNivel(u, 'tecnico')">
+                Tornar Técnico
+              </button>
+
+              <button *ngIf="u.nivel === 'tecnico'"
+                      class="btn btn-info btn-sm"
+                      (click)="alterarNivel(u, 'funcionario')">
+                Tornar Funcionário
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

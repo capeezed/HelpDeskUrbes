@@ -1,7 +1,7 @@
 // src/app/pages/admin/fila-chamados/fila-chamados.component.ts
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Observable, BehaviorSubject, switchMap, tap } from 'rxjs';
+import { Observable, BehaviorSubject, switchMap, tap, map } from 'rxjs';
 import { Chamado, ChamadoService } from '../../../services/chamado';
 import { WebsocketService } from '../../../services/websocket';
 import { NavegacaoChamadosService } from '../../../services/navegacao-chamados';
@@ -15,34 +15,50 @@ import { NavegacaoChamadosService } from '../../../services/navegacao-chamados';
 export class FilaChamados implements OnInit, OnDestroy {
 
   chamados$!: Observable<Chamado[]>;
-  
-  private filtroSubject = new BehaviorSubject<string>('aberto');
-  filtroAtual$: Observable<string> = this.filtroSubject.asObservable();
 
+  // ===== PAGINAÇÃO =====
+  page = 1;
+  limit = 20;
+  totalPages = 1;
+
+  // ===== FILTRO =====
+  private filtroSubject = new BehaviorSubject<string>('aberto');
+  filtroAtual$ = this.filtroSubject.asObservable();
+
+  // ===== SOCKET =====
   private novoChamadoHandler = (data: any) => {
     console.log('🆕 Novo chamado recebido via WebSocket:', data);
-    this.filtroSubject.next(this.filtroSubject.value);
+
+    // só recarrega se estiver na primeira página
+    if (this.page === 1) {
+      this.filtroSubject.next(this.filtroSubject.value);
+    }
   };
 
   constructor(
     private chamadoService: ChamadoService,
     private ws: WebsocketService,
-    private navService: NavegacaoChamadosService // NOVO
-  ) { }
+    private navService: NavegacaoChamadosService
+  ) {}
 
   async ngOnInit(): Promise<void> {
     await this.ws.conectar();
 
     this.chamados$ = this.filtroSubject.pipe(
-      tap(filtro => console.log(`Buscando chamados com filtro: [${filtro}]`)),
-      switchMap(statusFiltrado => {
-        return this.chamadoService.getMeusChamados(statusFiltrado);
+      tap(filtro => {
+        console.log(`Buscando chamados | status: [${filtro}] | página: ${this.page}`);
       }),
-      tap(chamados => {
-        // NOVO: Salva os IDs no serviço
-        const ids = chamados.map(c => c.id);
+      switchMap(status =>
+        this.chamadoService.getMeusChamados(status, this.page, this.limit)
+      ),
+      tap(res => {
+        this.totalPages = res.totalPages;
+
+        // salva IDs para navegação entre chamados
+        const ids = res.data.map(c => c.id);
         this.navService.setListaChamados(ids);
-      })
+      }),
+      map(res => res.data)
     );
 
     this.ws.offNovoChamado(this.novoChamadoHandler);
@@ -53,9 +69,32 @@ export class FilaChamados implements OnInit, OnDestroy {
     this.ws.offNovoChamado(this.novoChamadoHandler);
   }
 
+  // ===== AÇÕES =====
+
   mudarFiltro(novoStatus: string): void {
+    this.page = 1; // sempre volta pra primeira página ao trocar filtro
     this.filtroSubject.next(novoStatus);
   }
+
+  paginaAnterior(): void {
+    if (this.page > 1) {
+      this.page--;
+      this.filtroSubject.next(this.filtroSubject.value);
+    }
+  }
+
+  proximaPagina(): void {
+    if (this.page < this.totalPages) {
+      this.page++;
+      this.filtroSubject.next(this.filtroSubject.value);
+    }
+  }
+
+  trackById(_: number, chamado: Chamado) {
+    return chamado.id;
+  }
+
+  // ===== UI HELPERS =====
 
   getStatusClass(status: string | undefined) {
     switch (status) {
@@ -75,6 +114,6 @@ export class FilaChamados implements OnInit, OnDestroy {
       case 'media': return 'bg-info text-white';
       case 'baixa': return 'bg-secondary text-white';
       default: return 'bg-light text-dark';
-    }   
+    }
   }
 }

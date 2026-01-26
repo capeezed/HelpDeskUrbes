@@ -12,6 +12,7 @@ import { FilaChamados } from './pages/admin/fila-chamados/fila-chamados';
 import { DetalheChamado } from './pages/admin/detalhe-chamado/detalhe-chamado';
 import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-chamado-user';
 import { Estoque } from './pages/admin/estoque/estoque'
+import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
 
 const routes: Routes = [
   { path: 'login', component: Login},
@@ -55,6 +56,11 @@ const routes: Routes = [
     canActivate: [AuthGuard, TecnicoGuard] // se você tiver guard de técnico
   },
 
+  {
+    path: 'admin/usuarios',
+    component: AdminUsuarios,
+    canActivate: [AuthGuard, TecnicoGuard]
+  },
 
   {
     path: '**',
