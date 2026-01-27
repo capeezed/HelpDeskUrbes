@@ -14,6 +14,7 @@ import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-cha
 import { Estoque } from './pages/admin/estoque/estoque'
 import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
 import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
+import { Dash } from './pages/admin/dash/dash';
 
 const routes: Routes = [
   { path: 'login', component: Login},
@@ -66,6 +67,12 @@ const routes: Routes = [
   {
     path: 'admin/admin-avisos',
     component: AdminAvisos,
+    canActivate: [AuthGuard, TecnicoGuard]
+  },
+
+  {
+    path: 'admin/dash',
+    component: Dash,
     canActivate: [AuthGuard, TecnicoGuard]
   },
 

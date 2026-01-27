@@ -488,6 +488,124 @@ app.get('/api/admin/avisos', autenticarToken, async (req, res) => {
   }
 });
 
+app.get('/api/dashboard/total-relatorios', autenticarToken, apenasTecnicos, async (req, res) => {
+  const { mes, ano } = req.query;
+
+  let where = '1=1';
+  const params = [];
+
+  if (mes) {
+    where += ' AND MONTH(r.criado_em) = ?';
+    params.push(mes);
+  }
+
+  if (ano) {
+    where += ' AND YEAR(r.criado_em) = ?';
+    params.push(ano);
+  }
+
+  const [[row]] = await pool.query(
+    `SELECT COUNT(*) AS total
+     FROM relatorios_chamado r
+     WHERE ${where}`,
+    params
+  );
+
+  res.json({ total: row.total });
+});
+
+
+// CHAMADOS POR CATEGORIA
+app.get('/api/dashboard/chamados-por-categoria', autenticarToken, apenasTecnicos, async (req, res) => {
+  const { mes, ano } = req.query;
+
+  let where = '1=1';
+  const params = [];
+
+  if (mes) {
+    where += ' AND MONTH(c.criado_em) = ?';
+    params.push(mes);
+  }
+
+  if (ano) {
+    where += ' AND YEAR(c.criado_em) = ?';
+    params.push(ano);
+  }
+
+  const [rows] = await pool.query(
+    `SELECT c.categoria, COUNT(*) AS total
+     FROM chamados c
+     WHERE ${where}
+     GROUP BY c.categoria`,
+    params
+  );
+
+  res.json(rows);
+});
+
+
+// CHAMADOS POR STATUS
+app.get('/api/dashboard/chamados-por-status', autenticarToken, apenasTecnicos, async (req, res) => {
+  const { mes, ano } = req.query;
+
+  let where = '1=1';
+  const params = [];
+
+  if (mes) {
+    where += ' AND MONTH(c.criado_em) = ?';
+    params.push(mes);
+  }
+
+  if (ano) {
+    where += ' AND YEAR(c.criado_em) = ?';
+    params.push(ano);
+  }
+
+  const [rows] = await pool.query(
+    `SELECT c.status, COUNT(*) AS total
+     FROM chamados c
+     WHERE ${where}
+     GROUP BY c.status`,
+    params
+  );
+
+  res.json(rows);
+});
+
+
+// LISTAR RELATÓRIOS
+app.get('/api/dashboard/relatorios', autenticarToken, apenasTecnicos, async (req, res) => {
+  const { mes, ano } = req.query;
+
+  let where = '1=1';
+  const params = [];
+
+  if (mes) {
+    where += ' AND MONTH(r.criado_em) = ?';
+    params.push(mes);
+  }
+
+  if (ano) {
+    where += ' AND YEAR(r.criado_em) = ?';
+    params.push(ano);
+  }
+
+  const [rows] = await pool.query(
+    `SELECT 
+       r.id,
+       r.titulo,
+       r.relatorio,
+       r.criado_em,
+       c.titulo AS chamado_titulo
+     FROM relatorios_chamado r
+     JOIN chamados c ON c.id = r.chamado_id
+     WHERE ${where}
+     ORDER BY r.criado_em DESC`,
+    params
+  );
+
+  res.json(rows);
+});
 
 
 // ======================== RELATÓRIOS (técnico) =============

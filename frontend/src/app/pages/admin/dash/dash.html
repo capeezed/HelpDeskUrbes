@@ -1,0 +1,110 @@
+<app-header></app-header>
+
+<div class="container-fluid mt-4 px-4">
+
+  <h2 class="mb-4 fw-bold">📊 Dashboard</h2>
+
+  <!-- FILTRO -->
+  <div class="card p-3 mb-4 shadow-sm">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label>Mês</label>
+        <select class="form-select" [(ngModel)]="mes">
+          <option value="">Todos</option>
+          <option *ngFor="let m of meses" [value]="m.valor">{{ m.nome }}</option>
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label>Ano</label>
+        <select class="form-select" [(ngModel)]="ano">
+          <option *ngFor="let a of anos" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary w-100" (click)="carregarTudo()">Filtrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card card-info">
+        <div class="card-body text-center">
+          <h6>Total Relatórios</h6>
+          <h2>{{ totalRelatorios }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card card-warning">
+        <div class="card-body text-center">
+          <h6>Chamados Abertos</h6>
+          <h2>{{ totalAbertos }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card card-success">
+        <div class="card-body text-center">
+          <h6>Chamados Fechados</h6>
+          <h2>{{ totalFechados }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRÁFICOS -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card p-3 shadow-sm">
+        <h5>Chamados por Categoria</h5>
+        <div style="height:300px">
+          <canvas id="graficoCategoria"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card p-3 shadow-sm">
+        <h5>Chamados por Status</h5>
+        <div style="height:300px">
+          <canvas id="graficoStatus"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTA DE RELATÓRIOS -->
+  <div class="card p-3 shadow-sm">
+    <h4>📄 Relatórios</h4>
+
+    <div class="row g-3 mt-2">
+      <div class="col-md-4" *ngFor="let r of relatorios">
+        <div class="card relatorio-card" (click)="abrirRelatorio(r)">
+          <div class="card-body">
+            <h6>{{ r.titulo }}</h6>
+            <small class="text-muted">Chamado: {{ r.chamado_titulo }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-backdrop-custom" *ngIf="relatorioSelecionado">
+    <div class="modal-relatorio">
+      <h4>{{ relatorioSelecionado.titulo }}</h4>
+      <p><strong>Chamado:</strong> {{ relatorioSelecionado.chamado_titulo }}</p>
+      <hr>
+      <p>{{ relatorioSelecionado.relatorio }}</p>
+
+      <button class="btn btn-secondary mt-3" (click)="fecharRelatorio()">Fechar</button>
+    </div>
+  </div>
+
+</div>

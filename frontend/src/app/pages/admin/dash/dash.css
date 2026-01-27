@@ -1,0 +1,61 @@
+.card-info {
+  border-left: 5px solid #0d6efd;
+  background: #e7f1ff;
+}
+
+.card-warning {
+  border-left: 5px solid #ffc107;
+  background: #fff3cd;
+}
+
+.card-success {
+  border-left: 5px solid #198754;
+  background: #e9f7ef;
+}
+
+/* Container do gráfico */
+.grafico-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+/* NÃO força altura no canvas */
+canvas {
+  display: block;
+}
+
+/* Cards de relatório */
+.relatorio-card {
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.relatorio-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 10px rgba(0,0,0,0.15);
+}
+
+/* Modal */
+.modal-backdrop-custom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-relatorio {
+  background: white;
+  padding: 20px;
+  max-width: 600px;
+  width: 90%;
+  border-radius: 8px;
+  max-height: 80vh;
+  overflow-y: auto;
+}

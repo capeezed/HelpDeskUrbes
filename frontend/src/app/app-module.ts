@@ -21,6 +21,7 @@ import { DetalheChamadoUser } from './pages/user/detalhe-chamadoUser/detalhe-cha
 import { Estoque } from './pages/admin/estoque/estoque';
 import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
 import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
+import { Dash } from './pages/admin/dash/dash';
 
 @NgModule({
   declarations: [
@@ -35,7 +36,8 @@ import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
     Secure,
     Estoque,
     AdminUsuarios,
-    AdminAvisos
+    AdminAvisos,
+    Dash
     
   ],
   imports: [
