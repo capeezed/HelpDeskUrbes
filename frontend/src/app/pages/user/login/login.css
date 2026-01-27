@@ -3,78 +3,70 @@ body {
   background: linear-gradient(135deg, #f4f6f9, #e9ecef);
 }
 
-/* Card do login */
+/* Ajustes gerais de cards */
 .card {
-  border-radius: 12px;
-  max-width: 400px; /* Isso você já tem, mantém o card mais estreito */
-  width: 100%;
-  justify-content: center;
-  max-height: 60vh; /* Ajuste para no máximo 80% da altura da viewport */
-  overflow-y: auto; /* Adiciona barra de rolagem se o conteúdo exceder */
-  display: flex; /* Garante que o conteúdo interno se ajuste bem */
-  flex-direction: column; /* Organiza os itens em coluna */
+  border-radius: 16px;
+  background-color: #ffffff;
 }
 
+/* Card do login: Aumentado para 480px */
+.col-md-5 .card {
+  max-width: 480px;
+  width: 100%;
+}
 
-/* Título principal */
 .text-green-primary {
   color: #198754;
 }
 
-/* ====== MURAL ====== */
+/* ====== MURAL (Retângulo Largo) ====== */
 .mural-card {
-  border-radius: 12px;
-  background: #ffffff;
+  max-width: none !important; /* Permite expansão total na coluna */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Título do mural */
+/* Título com a cor da Urbes */
 .mural-card h4 {
-  font-weight: 600;
+  font-weight: 700;
+  color: #198754;
   border-bottom: 2px solid #198754;
-  padding-bottom: 8px;
-  margin-bottom: 15px;
+  padding-bottom: 15px;
 }
 
-/* Avisos */
+/* Área de avisos com scroll interno */
+.mural-scroll-area {
+  overflow-y: auto;
+  flex-grow: 1;
+  max-height: 70vh;
+  padding-right: 10px;
+}
+
 .mural-aviso {
   border-left: 6px solid;
-  padding: 10px 15px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  animation: fadeIn 0.4s ease-in-out;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  animation: fadeIn 0.4s ease-out;
 }
 
-/* Tipos */
-.mural-info {
-  border-color: #0dcaf0;
-  background-color: #e7f7fb;
-}
+/* Estilos de Tipos */
+.mural-info { border-color: #0dcaf0; background-color: #f0faff; }
+.mural-alerta { border-color: #ffc107; background-color: #fffdf5; }
+.mural-critico { border-color: #dc3545; background-color: #fff5f5; }
 
-.mural-alerta {
-  border-color: #ffc107;
-  background-color: #fff7e0;
-}
+/* Customização da Barra de Scroll */
+.mural-scroll-area::-webkit-scrollbar { width: 6px; }
+.mural-scroll-area::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 10px; }
 
-.mural-critico {
-  border-color: #dc3545;
-  background-color: #fdecea;
-}
-
-/* Animação */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsivo */
 @media (max-width: 768px) {
-  .mural-container {
-    margin-top: 20px;
-  }
+  .container-fluid { padding: 20px; }
+  .mural-container { margin-top: 20px; }
 }

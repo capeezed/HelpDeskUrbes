@@ -1,9 +1,8 @@
-<div class="container-fluid min-vh-100 d-flex align-items-center">
-  <div class="row w-100 justify-content-center">
+<div class="container-fluid min-vh-100 d-flex align-items-center px-lg-5">
+  <div class="row w-100 justify-content-center align-items-stretch g-4">
 
-    <!-- COLUNA DO LOGIN -->
-    <div class="col-md-4">
-      <div class="card p-4 shadow-lg">
+    <div class="col-12 col-md-5 col-lg-4 col-xl-3 d-flex justify-content-center">
+      <div class="card p-4 shadow-lg w-100 border-0">
         <div class="card-body">
 
           <div class="text-center mb-4">
@@ -14,40 +13,41 @@
 
           <form (ngSubmit)="handleLogin()">
             <div class="mb-3">
-              <label>Email</label>
+              <label class="form-label fw-medium">Email</label>
               <input
                 type="email"
-                class="form-control"
+                class="form-control form-control-lg"
                 [(ngModel)]="email"
                 name="email"
+                placeholder="nome@urbes.com.br"
                 required>
             </div>
 
             <div class="mb-3">
-              <label>Senha</label>
+              <label class="form-label fw-medium">Senha</label>
               <input
                 type="password"
-                class="form-control"
+                class="form-control form-control-lg"
                 [(ngModel)]="password"
                 name="password"
+                placeholder="********"
                 required>
             </div>
 
-            <button type="submit" class="btn btn-success w-100" [disabled]="isLoading">
+            <button type="submit" class="btn btn-success btn-lg w-100 mt-2" [disabled]="isLoading">
               <span *ngIf="!isLoading">Entrar</span>
               <span *ngIf="isLoading" class="spinner-border spinner-border-sm"></span>
             </button>
 
-            <div *ngIf="mensagemErro" class="alert alert-danger mt-3">
+            <div *ngIf="mensagemErro" class="alert alert-danger mt-3 py-2 text-center">
               {{ mensagemErro }}
             </div>
           </form>
 
-          <!-- LINK DE CADASTRO (voltou 😎) -->
-          <div class="text-center mt-3">
-            <p class="mb-0">
+          <div class="text-center mt-4">
+            <p class="mb-0 text-muted">
               Não tem uma conta?
-              <a routerLink="/cadastro" class="text-green-primary fw-semibold">
+              <a routerLink="/cadastro" class="text-green-primary fw-bold text-decoration-none">
                 Cadastre-se aqui
               </a>
             </p>
@@ -57,24 +57,28 @@
       </div>
     </div>
 
-    <!-- COLUNA DO MURAL -->
-    <div class="col-md-6 ms-md-4 mural-container">
-      <div class="card mural-card p-3 shadow-sm">
-        <h4 class="mb-3">📢 Avisos Gerais</h4>
+    <div class="col-12 col-md-7 col-lg-7 col-xl-8 mural-container">
+      <div class="card mural-card p-4 shadow-sm border-0 h-100">
+        <h4 class="mb-4 d-flex align-items-center">
+          <span class="me-2">📢</span> Avisos Gerais
+        </h4>
 
-        <div *ngIf="avisos.length === 0" class="text-muted">
+        <div *ngIf="avisos.length === 0" class="text-muted text-center py-5">
+          <i class="bi bi-info-circle d-block fs-2 mb-2"></i>
           Nenhum aviso no momento.
         </div>
 
-        <div *ngFor="let aviso of avisos"
-             class="mural-aviso"
-             [ngClass]="{
-               'mural-info': aviso.tipo === 'info',
-               'mural-alerta': aviso.tipo === 'alerta',
-               'mural-critico': aviso.tipo === 'critico'
-             }">
-          <strong>{{ aviso.titulo }}</strong><br>
-          {{ aviso.mensagem }}
+        <div class="mural-scroll-area">
+          <div *ngFor="let aviso of avisos"
+               class="mural-aviso"
+               [ngClass]="{
+                 'mural-info': aviso.tipo === 'info',
+                 'mural-alerta': aviso.tipo === 'alerta',
+                 'mural-critico': aviso.tipo === 'critico'
+               }">
+            <div class="fw-bold mb-1">{{ aviso.titulo }}</div>
+            <div class="small opacity-90">{{ aviso.mensagem }}</div>
+          </div>
         </div>
       </div>
     </div>
