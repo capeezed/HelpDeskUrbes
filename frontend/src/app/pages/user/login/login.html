@@ -77,7 +77,9 @@
                  'mural-critico': aviso.tipo === 'critico'
                }">
             <div class="fw-bold mb-1">{{ aviso.titulo }}</div>
-            <div class="small opacity-90">{{ aviso.mensagem }}</div>
+            <div class="small opacity-90" style="white-space: pre-line;">
+              {{ aviso.mensagem }}
+            </div>
           </div>
         </div>
       </div>

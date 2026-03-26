@@ -384,15 +384,16 @@ app.put('/api/chamados/:id/atribuir', autenticarToken, apenasTecnicos, async (re
 });
 
 app.put('/api/admin/avisos/:id', autenticarToken, async (req, res) => {
+
   if (!['tecnico','admin'].includes(req.usuario.nivel)) {
     return res.status(403).json({ message: 'Acesso negado.' });
   }
 
-  const { titulo, mensagem, tipo, ativo } = req.body;
+  const { titulo, mensagem, tipo } = req.body;
 
   await pool.query(
-    'UPDATE avisos SET titulo=?, mensagem=?, tipo=?, ativo=? WHERE id=?',
-    [titulo, mensagem, tipo, ativo, req.params.id]
+    'UPDATE avisos SET titulo=?, mensagem=?, tipo=? WHERE id=?',
+    [titulo, mensagem, tipo, req.params.id]
   );
 
   res.json({ message: 'Aviso atualizado.' });

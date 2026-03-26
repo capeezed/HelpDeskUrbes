@@ -13,6 +13,8 @@ export class AdminAvisos implements OnInit {
   mensagem = '';
   tipo: 'info' | 'alerta' | 'critico' = 'info';
 
+  editandoId: number | null = null;
+
   constructor(private avisoService: AvisoService) {}
 
   ngOnInit(): void {
@@ -31,12 +33,36 @@ export class AdminAvisos implements OnInit {
     }).subscribe(() => {
       this.titulo = '';
       this.mensagem = '';
+      this.tipo = 'info';
       this.carregar();
     });
   }
 
+  editar(aviso: Aviso) {
+    this.editandoId = aviso.id;
+  }
+
+  salvar(aviso: Aviso) {
+    this.avisoService.atualizar(aviso.id, {
+      titulo: aviso.titulo,
+      mensagem: aviso.mensagem,
+      tipo: aviso.tipo
+    }).subscribe(() => {
+      this.editandoId = null;
+      this.carregar();
+    });
+  }
+
+  cancelar() {
+    this.editandoId = null;
+    this.carregar();
+  }
+
   remover(id: number) {
     if (!confirm('Remover aviso?')) return;
-    this.avisoService.remover(id).subscribe(() => this.carregar());
+
+    this.avisoService.remover(id).subscribe(() => {
+      this.carregar();
+    });
   }
 }

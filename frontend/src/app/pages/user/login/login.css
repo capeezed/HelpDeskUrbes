@@ -3,70 +3,58 @@ body {
   background: linear-gradient(135deg, #f4f6f9, #e9ecef);
 }
 
-/* Ajustes gerais de cards */
+/* Card de Login */
 .card {
-  border-radius: 16px;
+  border-radius: 20px;
   background-color: #ffffff;
-}
-
-/* Card do login: Aumentado para 480px */
-.col-md-5 .card {
-  max-width: 480px;
-  width: 100%;
 }
 
 .text-green-primary {
   color: #198754;
 }
 
-/* ====== MURAL (Retângulo Largo) ====== */
-.mural-card {
-  max-width: none !important; /* Permite expansão total na coluna */
-  width: 100%;
-  display: flex;
-  flex-direction: column;
+/* Inputs e Botões */
+.form-control-lg {
+  border-radius: 10px;
+  font-size: 1rem;
 }
 
-/* Título com a cor da Urbes */
-.mural-card h4 {
-  font-weight: 700;
-  color: #198754;
-  border-bottom: 2px solid #198754;
-  padding-bottom: 15px;
+.btn-success {
+  background-color: #198754;
+  border-radius: 10px;
+  font-weight: 600;
 }
 
-/* Área de avisos com scroll interno */
+/* ====== ESTILO DO MODAL (MURAL) ====== */
+.modal-content {
+  border-radius: 20px;
+}
+
 .mural-scroll-area {
+  max-height: 500px;
   overflow-y: auto;
-  flex-grow: 1;
-  max-height: 70vh;
   padding-right: 10px;
 }
 
 .mural-aviso {
   border-left: 6px solid;
   padding: 15px;
-  border-radius: 8px;
+  border-radius: 12px;
   margin-bottom: 15px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  animation: fadeIn 0.4s ease-out;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  animation: slideUp 0.3s ease-out;
 }
 
-/* Estilos de Tipos */
+/* Cores por tipo */
 .mural-info { border-color: #0dcaf0; background-color: #f0faff; }
 .mural-alerta { border-color: #ffc107; background-color: #fffdf5; }
 .mural-critico { border-color: #dc3545; background-color: #fff5f5; }
 
 /* Customização da Barra de Scroll */
-.mural-scroll-area::-webkit-scrollbar { width: 6px; }
+.mural-scroll-area::-webkit-scrollbar { width: 5px; }
 .mural-scroll-area::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 10px; }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-  .container-fluid { padding: 20px; }
-  .mural-container { margin-top: 20px; }
 }

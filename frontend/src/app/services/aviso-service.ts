@@ -8,9 +8,7 @@ export interface Aviso {
   titulo: string;
   mensagem: string;
   tipo: 'info' | 'alerta' | 'critico';
-  ativo: number;
-}
-
+  }
 @Injectable({ providedIn: 'root' })
 export class AvisoService {
   private apiUrl = `${environment.apiUrl}/api`;
