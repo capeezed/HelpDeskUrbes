@@ -1,7 +1,5 @@
 <app-header></app-header>
-
 <div class="container-fluid mt-4 px-4">
-
   <h2 class="mb-4 fw-bold">📊 Dashboard</h2>
 
   <!-- FILTRO -->
@@ -14,16 +12,19 @@
           <option *ngFor="let m of meses" [value]="m.valor">{{ m.nome }}</option>
         </select>
       </div>
-
       <div class="col-md-3">
         <label>Ano</label>
         <select class="form-select" [(ngModel)]="ano">
           <option *ngFor="let a of anos" [value]="a">{{ a }}</option>
         </select>
       </div>
-
       <div class="col-md-3 d-flex align-items-end">
         <button class="btn btn-primary w-100" (click)="carregarTudo()">Filtrar</button>
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-danger w-100" (click)="exportarPDF()">
+          📄 Exportar PDF
+        </button>
       </div>
     </div>
   </div>
@@ -38,7 +39,6 @@
         </div>
       </div>
     </div>
-
     <div class="col-md-4">
       <div class="card card-warning">
         <div class="card-body text-center">
@@ -47,7 +47,6 @@
         </div>
       </div>
     </div>
-
     <div class="col-md-4">
       <div class="card card-success">
         <div class="card-body text-center">
@@ -68,7 +67,6 @@
         </div>
       </div>
     </div>
-
     <div class="col-lg-6">
       <div class="card p-3 shadow-sm">
         <h5>Chamados por Status</h5>
@@ -82,7 +80,6 @@
   <!-- LISTA DE RELATÓRIOS -->
   <div class="card p-3 shadow-sm">
     <h4>📄 Relatórios</h4>
-
     <div class="row g-3 mt-2">
       <div class="col-md-4" *ngFor="let r of relatorios">
         <div class="card relatorio-card" (click)="abrirRelatorio(r)">
@@ -102,9 +99,7 @@
       <p><strong>Chamado:</strong> {{ relatorioSelecionado.chamado_titulo }}</p>
       <hr>
       <p>{{ relatorioSelecionado.relatorio }}</p>
-
       <button class="btn btn-secondary mt-3" (click)="fecharRelatorio()">Fechar</button>
     </div>
   </div>
-
 </div>
