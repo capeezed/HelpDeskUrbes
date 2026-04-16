@@ -1,6 +1,6 @@
 // src/app/pages/novo-chamado/novo-chamado.component.ts
 
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { ChamadoService } from '../../../services/chamado';
 import { CommonModule } from '@angular/common';
@@ -24,6 +24,7 @@ export class NovoChamado {
   
   arquivoSelecionado: File | null = null;
   origemAnexo: 'upload' | 'clipboard' | null = null;
+  previewAnexoUrl: string | null = null;
 
   isLoading = false;
   mensagemErro = '';
@@ -79,6 +80,10 @@ export class NovoChamado {
     private router: Router
   ) {}
 
+  ngOnDestroy(): void {
+    this.clearPreviewUrl();
+  }
+
   @HostListener('document:paste', ['$event'])
   onDocumentPaste(event: ClipboardEvent): void {
     this.processarImagemColada(event);
@@ -88,9 +93,11 @@ export class NovoChamado {
     if (event.target.files && event.target.files.length > 0) {
       this.arquivoSelecionado = event.target.files[0];
       this.origemAnexo = 'upload';
+      this.updatePreviewUrl(this.arquivoSelecionado);
     } else {
       this.arquivoSelecionado = null;
       this.origemAnexo = null;
+      this.clearPreviewUrl();
     }
   }
 
@@ -101,6 +108,7 @@ export class NovoChamado {
   removerAnexo(): void {
     this.arquivoSelecionado = null;
     this.origemAnexo = null;
+    this.clearPreviewUrl();
   }
 
   private processarImagemColada(event: ClipboardEvent): void {
@@ -121,9 +129,25 @@ export class NovoChamado {
         lastModified: Date.now()
       });
       this.origemAnexo = 'clipboard';
+      this.updatePreviewUrl(this.arquivoSelecionado);
       this.mensagemErro = '';
       event.preventDefault();
       return;
+    }
+  }
+
+  private updatePreviewUrl(file: File | null): void {
+    this.clearPreviewUrl();
+
+    if (!file || !file.type.startsWith('image/')) return;
+
+    this.previewAnexoUrl = URL.createObjectURL(file);
+  }
+
+  private clearPreviewUrl(): void {
+    if (this.previewAnexoUrl) {
+      URL.revokeObjectURL(this.previewAnexoUrl);
+      this.previewAnexoUrl = null;
     }
   }
 
@@ -169,6 +193,7 @@ export class NovoChamado {
         this.categoriaSelecionada = '';
         this.arquivoSelecionado = null;
         this.origemAnexo = null;
+        this.clearPreviewUrl();
 
         setTimeout(() => {
           this.router.navigate(['/dashboard']);

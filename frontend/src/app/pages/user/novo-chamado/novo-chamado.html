@@ -130,6 +130,10 @@
                   Remover imagem
                 </button>
               </div>
+              <div class="anexo-preview mt-3" *ngIf="previewAnexoUrl">
+                <div class="anexo-preview-label">Preview da imagem</div>
+                <img [src]="previewAnexoUrl" alt="Preview do anexo" class="img-fluid rounded shadow-sm">
+              </div>
             </div>
 
             <!-- Mensagens -->
