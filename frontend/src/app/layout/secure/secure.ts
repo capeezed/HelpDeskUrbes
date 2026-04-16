@@ -41,7 +41,7 @@ export class Secure implements OnInit, OnDestroy {
     this.notify.add({
       tipo: 'novo-chamado',
       texto: `Novo chamado: ${data.titulo}`,
-      link: `/admin/chamado/${data.id}`
+      link: `/admin/chamado/${data.chamadoId}`
     });
   };
 

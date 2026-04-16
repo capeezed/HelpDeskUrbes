@@ -32,7 +32,7 @@ export class SocketService {
       this.notify.add({
         tipo: 'novo-chamado',
         texto: `Novo chamado aberto: "${data.titulo}"`,
-        link: `/admin/chamado/${data.id}`
+        link: `/admin/chamado/${data.chamadoId}`
       });
     });
 

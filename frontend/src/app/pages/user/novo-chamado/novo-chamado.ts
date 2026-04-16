@@ -1,8 +1,8 @@
 // src/app/pages/novo-chamado/novo-chamado.component.ts
 
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChamadoService, NovoChamado as NovoChamadoData } from '../../../services/chamado';
+import { ChamadoService } from '../../../services/chamado';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -23,6 +23,7 @@ export class NovoChamado {
   categoriaSelecionada = '';
   
   arquivoSelecionado: File | null = null;
+  origemAnexo: 'upload' | 'clipboard' | null = null;
 
   isLoading = false;
   mensagemErro = '';
@@ -78,11 +79,51 @@ export class NovoChamado {
     private router: Router
   ) {}
 
+  @HostListener('document:paste', ['$event'])
+  onDocumentPaste(event: ClipboardEvent): void {
+    this.processarImagemColada(event);
+  }
+
   onFileSelected(event: any): void {
     if (event.target.files && event.target.files.length > 0) {
       this.arquivoSelecionado = event.target.files[0];
+      this.origemAnexo = 'upload';
     } else {
       this.arquivoSelecionado = null;
+      this.origemAnexo = null;
+    }
+  }
+
+  onPasteAreaPaste(event: ClipboardEvent): void {
+    this.processarImagemColada(event);
+  }
+
+  removerAnexo(): void {
+    this.arquivoSelecionado = null;
+    this.origemAnexo = null;
+  }
+
+  private processarImagemColada(event: ClipboardEvent): void {
+    const clipboardItems = event.clipboardData?.items;
+    if (!clipboardItems?.length) return;
+
+    for (const item of Array.from(clipboardItems)) {
+      if (!item.type.startsWith('image/')) continue;
+
+      const imageFile = item.getAsFile();
+      if (!imageFile) continue;
+
+      const extension = imageFile.type.split('/')[1] || 'png';
+      const fileName = `clipboard-${Date.now()}.${extension}`;
+
+      this.arquivoSelecionado = new File([imageFile], fileName, {
+        type: imageFile.type,
+        lastModified: Date.now()
+      });
+      this.origemAnexo = 'clipboard';
+      this.mensagemErro = '';
+      event.preventDefault();
+      return;
     }
   }
 
@@ -127,6 +168,7 @@ export class NovoChamado {
         this.tipoSelecionado = 'incidente';
         this.categoriaSelecionada = '';
         this.arquivoSelecionado = null;
+        this.origemAnexo = null;
 
         setTimeout(() => {
           this.router.navigate(['/dashboard']);

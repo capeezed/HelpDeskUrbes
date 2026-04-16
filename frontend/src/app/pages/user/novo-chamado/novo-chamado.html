@@ -109,9 +109,27 @@
                 id="anexo"
                 accept="image/*"
                 (change)="onFileSelected($event)">
-              <small class="form-text text-muted" *ngIf="arquivoSelecionado">
-                Arquivo selecionado: {{ arquivoSelecionado.name }}
-              </small>
+              <div
+                class="paste-zone mt-3"
+                tabindex="0"
+                (paste)="onPasteAreaPaste($event)">
+                <strong>Cole uma imagem aqui</strong>
+                <span class="d-block text-muted">
+                  Use Ctrl+V depois de copiar um print ou imagem para o clipboard.
+                </span>
+              </div>
+              <div class="anexo-info mt-2" *ngIf="arquivoSelecionado">
+                <small class="form-text text-muted">
+                  Arquivo selecionado: {{ arquivoSelecionado.name }}
+                  <span *ngIf="origemAnexo === 'clipboard'">(colado do clipboard)</span>
+                </small>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  (click)="removerAnexo()">
+                  Remover imagem
+                </button>
+              </div>
             </div>
 
             <!-- Mensagens -->

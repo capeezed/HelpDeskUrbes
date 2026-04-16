@@ -13,6 +13,14 @@ const { autenticarToken, apenasTecnicos } = require('./authMiddleware');
 const app = express();
 const http = require('http');
 const server = http.createServer(app);
+const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_UPLOAD_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif'
+]);
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '12h';
 
 // Socket.IO com CORS liberado
 const { Server } = require('socket.io');
@@ -55,9 +63,27 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ======================== MULTER (UPLOADS) =================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => { cb(null, 'uploads/'); },
-  filename: (req, file, cb) => { cb(null, Date.now() + '-' + file.originalname); }
+  filename: (req, file, cb) => {
+    const sanitizedName = path
+      .basename(file.originalname)
+      .replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    cb(null, `${Date.now()}-${sanitizedName}`);
+  }
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: MAX_UPLOAD_SIZE_BYTES
+  },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_UPLOAD_MIME_TYPES.has(file.mimetype)) {
+      return cb(new Error('Tipo de arquivo nÃ£o permitido.'));
+    }
+
+    cb(null, true);
+  }
+});
 
 // ======================== SOCKET.IO STATE ==================
 /** Mapa userId -> socketId (1:1 simples) */
@@ -298,6 +324,19 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
     res.status(201).json(novoChamado);
   } catch (err) {
     console.error('Erro ao criar chamado:', err);
+
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'O anexo excede o tamanho mÃ¡ximo de 5 MB.' });
+      }
+
+      return res.status(400).json({ message: 'Erro ao processar o anexo enviado.' });
+    }
+
+    if (err?.message === 'Tipo de arquivo nÃ£o permitido.') {
+      return res.status(400).json({ message: 'Formato de anexo invÃ¡lido. Envie uma imagem JPG, PNG, WEBP ou GIF.' });
+    }
+
     res.status(500).json({ message: 'Erro ao salvar dados' });
   }
 });
@@ -452,22 +491,6 @@ app.delete('/api/admin/avisos/:id', autenticarToken, async (req, res) => {
 
   await pool.query('DELETE FROM avisos WHERE id = ?', [req.params.id]);
   res.json({ message: 'Aviso removido.' });
-});
-
-app.get('/api/avisos-publicos', async (req, res) => {
-  try {
-    const [rows] = await pool.query(`
-      SELECT id, titulo, mensagem, tipo
-      FROM avisos
-      WHERE ativo = 1
-      ORDER BY criado_em DESC
-    `);
-
-    res.json(rows);
-  } catch (err) {
-    console.error('Erro ao buscar avisos públicos:', err);
-    res.status(500).json({ message: 'Erro ao buscar avisos.' });
-  }
 });
 
 app.get('/api/admin/avisos', autenticarToken, async (req, res) => {
@@ -783,7 +806,7 @@ app.post('/api/login', async (req, res) => {
       cargo: usuario.cargo_texto
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET);
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     res.json({ message: 'Login bem-sucedido!', token });
   } catch (err) {
     console.error('Erro no login:', err);
@@ -828,7 +851,7 @@ app.post('/api/estoque/itens', autenticarToken, apenasTecnicos, async (req, res)
 });
 
 // Atualizar item de estoque
-app.put('/api/estoque/itens/:id', async (req, res) => {
+app.put('/api/estoque/itens/:id', autenticarToken, apenasTecnicos, async (req, res) => {
   const { id } = req.params;
   const { nome, categoria, descricao, quantidade_minima, localizacao } = req.body;
 
@@ -874,11 +897,7 @@ app.put('/api/estoque/itens/:id', async (req, res) => {
 });
 
 // PUT /api/admin/usuarios/:id/nivel
-app.put('/api/admin/usuarios/:id/nivel', autenticarToken, async (req, res) => {
-  if (req.usuario.nivel !== 'tecnico') {
-    return res.status(403).json({ message: 'Acesso negado.' });
-  }
-
+app.put('/api/admin/usuarios/:id/nivel', autenticarToken, apenasTecnicos, async (req, res) => {
   const userId = Number(req.params.id);
   const { nivel } = req.body;
 
@@ -1021,11 +1040,7 @@ app.get('/api/chamados/:id/comentarios', autenticarToken, async (req, res) => {
   }
 });
 
-app.get('/api/admin/usuarios', autenticarToken, async (req, res) => {
-  if (req.usuario.nivel !== 'tecnico') {
-    return res.status(403).json({ message: 'Acesso negado.' });
-  }
-
+app.get('/api/admin/usuarios', autenticarToken, apenasTecnicos, async (req, res) => {
   const [rows] = await pool.query(`
     SELECT u.id, u.email, p.nome_completo, p.nivel
     FROM usuarios u
