@@ -3,7 +3,13 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs';
 
 // 1. Caminho do serviço corrigido
-import { Chamado, ChamadoService } from '../../../services/chamado';
+import {
+  Chamado,
+  ChamadoService,
+  formatarTempoSla,
+  getSlaClass,
+  getSlaLabel
+} from '../../../services/chamado';
 
 @Component({
   selector: 'app-dashboard',
@@ -42,4 +48,8 @@ export class Dashboard implements OnInit {
         return 'bg-light text-dark'; // Padrão
     }
   }
+
+  getSlaClass = getSlaClass;
+  getSlaLabel = getSlaLabel;
+  formatarTempoSla = formatarTempoSla;
 }

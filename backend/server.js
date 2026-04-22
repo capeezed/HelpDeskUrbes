@@ -137,6 +137,131 @@ async function enviarParaTecnicos(evento, dados) {
 
 // ======================== ROTAS API ========================
 
+const SLA_SELECT = `
+  DATE_ADD(
+    c.criado_em,
+    INTERVAL CASE c.prioridade
+      WHEN 'urgente' THEN 4
+      WHEN 'alta' THEN 8
+      WHEN 'media' THEN 24
+      WHEN 'baixa' THEN 48
+      ELSE 24
+    END HOUR
+  ) AS sla_prazo_em,
+  TIMESTAMPDIFF(
+    MINUTE,
+    NOW(),
+    DATE_ADD(
+      c.criado_em,
+      INTERVAL CASE c.prioridade
+        WHEN 'urgente' THEN 4
+        WHEN 'alta' THEN 8
+        WHEN 'media' THEN 24
+        WHEN 'baixa' THEN 48
+        ELSE 24
+      END HOUR
+    )
+  ) AS sla_minutos_restantes,
+  CASE
+    WHEN c.status IN ('resolvido', 'fechado') THEN 'encerrado'
+    WHEN NOW() > DATE_ADD(
+      c.criado_em,
+      INTERVAL CASE c.prioridade
+        WHEN 'urgente' THEN 4
+        WHEN 'alta' THEN 8
+        WHEN 'media' THEN 24
+        WHEN 'baixa' THEN 48
+        ELSE 24
+      END HOUR
+    ) THEN 'vencido'
+    WHEN TIMESTAMPDIFF(
+      MINUTE,
+      NOW(),
+      DATE_ADD(
+        c.criado_em,
+        INTERVAL CASE c.prioridade
+          WHEN 'urgente' THEN 4
+          WHEN 'alta' THEN 8
+          WHEN 'media' THEN 24
+          WHEN 'baixa' THEN 48
+          ELSE 24
+        END HOUR
+      )
+    ) <= 60 THEN 'alerta'
+    ELSE 'dentro'
+  END AS sla_status
+`;
+
+function normalizarTextoParaPrioridade(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function contemTermo(texto, termos) {
+  return termos.some(termo => texto.includes(termo));
+}
+
+function classificarPrioridadeChamado({ titulo, descricao, tipo, categoria }) {
+  const texto = normalizarTextoParaPrioridade(`${titulo} ${descricao} ${tipo} ${categoria}`);
+
+  const termosUrgentes = [
+    'urgente',
+    'emergencia',
+    'parado',
+    'parada',
+    'fora do ar',
+    'sem internet',
+    'sem rede',
+    'todos sem acesso',
+    'ninguem acessa',
+    'nao acessa',
+    'nao consigo acessar',
+    'nao liga',
+    'servidor',
+    'sistema fora',
+    'producao',
+    'operacao parada',
+    'atendimento parado'
+  ];
+
+  const termosAltos = [
+    'sem acesso',
+    'erro ao acessar',
+    'nao abre',
+    'nao imprime',
+    'impressora parada',
+    'computador travando',
+    'travando muito',
+    'perdi acesso',
+    'bloqueado',
+    'falha',
+    'erro',
+    'nao funciona'
+  ];
+
+  const termosBaixos = [
+    'duvida',
+    'orientacao',
+    'instalar',
+    'instalacao',
+    'trocar',
+    'substituir',
+    'configurar',
+    'cadastro',
+    'solicitacao de acesso',
+    'novo usuario',
+    'ajuste'
+  ];
+
+  if (contemTermo(texto, termosUrgentes)) return 'urgente';
+  if (contemTermo(texto, termosAltos)) return 'alta';
+  if (tipo === 'incidente') return 'media';
+  if (contemTermo(texto, termosBaixos)) return 'baixa';
+  return 'media';
+}
+
 /**
  * GET /api/chamados
  * - Técnico/Admin: vê todos (com nome do solicitante)
@@ -156,7 +281,8 @@ app.get('/api/chamados', autenticarToken, async (req, res) => {
     let sql = `
       SELECT SQL_CALC_FOUND_ROWS
         c.*,
-        p.nome_completo AS solicitante_nome
+        p.nome_completo AS solicitante_nome,
+        ${SLA_SELECT}
       FROM chamados c
       JOIN perfis p ON c.criado_por_id = p.id
     `;
@@ -222,6 +348,7 @@ app.get('/api/chamado/:id', autenticarToken, async (req, res) => {
     const sql = `
       SELECT 
         c.*,
+        ${SLA_SELECT},
         p_solicitante.nome_completo AS solicitante_nome,
         p_solicitante.setor_texto AS solicitante_setor,
         p_solicitante.cargo_texto AS solicitante_cargo,
@@ -292,10 +419,12 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
       anexo_url = `${baseUrl}/uploads/${req.file.filename}`;
     }
 
-    // SQL atualizado com tipo e categoria
+    const prioridade = classificarPrioridadeChamado({ titulo, descricao, tipo, categoria });
+
+    // SQL atualizado com tipo, categoria e prioridade automatica
     const sql = `
-      INSERT INTO chamados (titulo, descricao, tipo, categoria, criado_por_id, anexo_url)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO chamados (titulo, descricao, tipo, categoria, prioridade, criado_por_id, anexo_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     
     const [result] = await pool.query(sql, [
@@ -303,6 +432,7 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
       descricao, 
       tipo, 
       categoria, 
+      prioridade,
       criado_por_id, 
       anexo_url
     ]);

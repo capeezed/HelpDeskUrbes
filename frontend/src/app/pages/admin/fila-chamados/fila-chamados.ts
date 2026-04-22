@@ -2,7 +2,13 @@
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable, BehaviorSubject, switchMap, tap, map } from 'rxjs';
-import { Chamado, ChamadoService } from '../../../services/chamado';
+import {
+  Chamado,
+  ChamadoService,
+  formatarTempoSla,
+  getSlaClass,
+  getSlaLabel
+} from '../../../services/chamado';
 import { WebsocketService } from '../../../services/websocket';
 import { NavegacaoChamadosService } from '../../../services/navegacao-chamados';
 
@@ -116,4 +122,8 @@ export class FilaChamados implements OnInit, OnDestroy {
       default: return 'bg-light text-dark';
     }
   }
+
+  getSlaClass = getSlaClass;
+  getSlaLabel = getSlaLabel;
+  formatarTempoSla = formatarTempoSla;
 }

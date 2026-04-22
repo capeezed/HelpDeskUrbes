@@ -3,7 +3,13 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, switchMap, catchError, of, tap, map } from 'rxjs';
-import { Chamado, ChamadoService } from '../../../services/chamado';
+import {
+  Chamado,
+  ChamadoService,
+  formatarTempoSla,
+  getSlaClass,
+  getSlaLabel
+} from '../../../services/chamado';
 import { PerfilTecnico, DadosGerais } from '../../../services/dados-gerais';
 import { AuthService } from '../../../services/auth.service';
 import { ComentariosService } from '../../../services/comentarios';
@@ -260,4 +266,8 @@ export class DetalheChamado implements OnInit, OnDestroy {
       default: return 'bg-light text-dark';
     }
   }
+
+  getSlaClass = getSlaClass;
+  getSlaLabel = getSlaLabel;
+  formatarTempoSla = formatarTempoSla;
 }

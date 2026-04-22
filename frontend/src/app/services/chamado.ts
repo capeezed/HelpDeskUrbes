@@ -24,6 +24,9 @@ export interface Chamado {
   solicitante_setor?: string;
   solicitante_cargo?: string;
   tecnico_atribuido_nome?: string;
+  sla_prazo_em?: string;
+  sla_minutos_restantes?: number;
+  sla_status?: 'dentro' | 'alerta' | 'vencido' | 'encerrado';
 }
 
 // Interface para criar um novo chamado (Simplificada)
@@ -31,6 +34,44 @@ export interface NovoChamado {
   titulo: string;
   descricao: string;
   tipo: 'incidente' | 'solicitacao';     // ✅ JÁ TEM
+}
+
+export function getSlaClass(status: Chamado['sla_status'] | undefined): string {
+  switch (status) {
+    case 'vencido': return 'bg-danger text-white';
+    case 'alerta': return 'bg-warning text-dark';
+    case 'encerrado': return 'bg-secondary text-white';
+    case 'dentro': return 'bg-success text-white';
+    default: return 'bg-light text-dark';
+  }
+}
+
+export function getSlaLabel(status: Chamado['sla_status'] | undefined): string {
+  switch (status) {
+    case 'vencido': return 'SLA vencido';
+    case 'alerta': return 'SLA em alerta';
+    case 'encerrado': return 'SLA encerrado';
+    case 'dentro': return 'Dentro do SLA';
+    default: return 'SLA indisponivel';
+  }
+}
+
+export function formatarTempoSla(minutos: number | undefined): string {
+  if (minutos === undefined || minutos === null) return 'Sem prazo';
+
+  const atrasado = minutos < 0;
+  const total = Math.abs(minutos);
+  const dias = Math.floor(total / 1440);
+  const horas = Math.floor((total % 1440) / 60);
+  const mins = total % 60;
+
+  const partes = [];
+  if (dias) partes.push(`${dias}d`);
+  if (horas) partes.push(`${horas}h`);
+  if (!dias && mins) partes.push(`${mins}min`);
+
+  const tempo = partes.length ? partes.join(' ') : 'menos de 1min';
+  return atrasado ? `${tempo} atrasado` : `${tempo} restantes`;
 }
 
 @Injectable({

@@ -65,6 +65,19 @@
       <p><strong>Aberto em:</strong>
         {{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}
       </p>
+
+      <p class="mb-1">
+        <strong>SLA:</strong>
+        <span class="badge ms-2" [ngClass]="getSlaClass(chamado.sla_status)">
+          {{ getSlaLabel(chamado.sla_status) }}
+        </span>
+      </p>
+      <p class="text-muted mb-0">
+        {{ formatarTempoSla(chamado.sla_minutos_restantes) }}
+        <span *ngIf="chamado.sla_prazo_em">
+          | Prazo: {{ chamado.sla_prazo_em | date:'dd/MM/yyyy HH:mm' }}
+        </span>
+      </p>
     </div>
   </div>
 

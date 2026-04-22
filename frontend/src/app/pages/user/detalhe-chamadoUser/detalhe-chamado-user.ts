@@ -3,7 +3,13 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, switchMap, of, catchError, map } from 'rxjs';
-import { Chamado, ChamadoService } from '../../../services/chamado';
+import {
+  Chamado,
+  ChamadoService,
+  formatarTempoSla,
+  getSlaClass,
+  getSlaLabel
+} from '../../../services/chamado';
 import { ComentariosService } from '../../../services/comentarios';
 import { AuthService } from '../../../services/auth.service';
 import { WebsocketService } from '../../../services/websocket';
@@ -165,4 +171,8 @@ export class DetalheChamadoUser implements OnInit, OnDestroy {
       }
     });
   }
+
+  getSlaClass = getSlaClass;
+  getSlaLabel = getSlaLabel;
+  formatarTempoSla = formatarTempoSla;
 }

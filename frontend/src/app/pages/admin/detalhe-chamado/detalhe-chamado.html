@@ -126,6 +126,21 @@
           </div>
 
           <div class="mb-3">
+            <label class="form-label"><strong>SLA:</strong></label>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="badge fs-6" [ngClass]="getSlaClass(chamado.sla_status)">
+                {{ getSlaLabel(chamado.sla_status) }}
+              </span>
+              <small class="text-muted">
+                {{ formatarTempoSla(chamado.sla_minutos_restantes) }}
+              </small>
+            </div>
+            <small class="text-muted d-block mt-1" *ngIf="chamado.sla_prazo_em">
+              Prazo: {{ chamado.sla_prazo_em | date:'dd/MM/yyyy HH:mm' }}
+            </small>
+          </div>
+
+          <div class="mb-3">
             <label for="prioridadeSelect" class="form-label">Alterar prioridade para:</label>
             <select class="form-select" id="prioridadeSelect" [(ngModel)]="prioridadeSelecionada">
               <option value="baixa">Baixa</option>
