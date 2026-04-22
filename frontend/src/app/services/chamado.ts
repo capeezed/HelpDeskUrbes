@@ -24,9 +24,23 @@ export interface Chamado {
   solicitante_setor?: string;
   solicitante_cargo?: string;
   tecnico_atribuido_nome?: string;
+  registrado_por_id?: number | null;
+  registrado_por_nome?: string;
+  solicitante_nome_manual?: string | null;
+  solicitante_contato_manual?: string | null;
+  solicitante_setor_manual?: string | null;
+  origem_solicitacao?: 'telefone' | 'presencial' | 'whatsapp' | 'email' | 'outro' | null;
+  observacao_interna?: string | null;
   sla_prazo_em?: string;
   sla_minutos_restantes?: number;
   sla_status?: 'dentro' | 'alerta' | 'vencido' | 'encerrado';
+}
+
+export interface UsuarioSolicitante {
+  id: number;
+  nome_completo: string;
+  email: string;
+  nivel: 'admin' | 'tecnico' | 'funcionario';
 }
 
 // Interface para criar um novo chamado (Simplificada)
@@ -115,6 +129,14 @@ export class ChamadoService {
 
   criarChamado(formData: FormData): Observable<any> {
     return this.http.post(`${this.apiUrl}/chamado`, formData);
+  }
+
+  criarChamadoPorUsuario(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chamados/por-usuario`, formData);
+  }
+
+  listarUsuariosSolicitantes(): Observable<UsuarioSolicitante[]> {
+    return this.http.get<UsuarioSolicitante[]>(`${this.apiUrl}/admin/usuarios`);
   }
 
   getChamadoById(id: number): Observable<Chamado> {

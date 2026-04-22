@@ -15,6 +15,7 @@ import { Estoque } from './pages/admin/estoque/estoque'
 import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
 import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
 import { Dash } from './pages/admin/dash/dash';
+import { NovoChamadoUsuario } from './pages/admin/novo-chamado-usuario/novo-chamado-usuario';
 
 const routes: Routes = [
   { path: 'login', component: Login},
@@ -47,6 +48,7 @@ const routes: Routes = [
         canActivate: [TecnicoGuard], // 2. PROTEGIDO PELO NOVO GUARD
         children: [
           { path: 'fila', component: FilaChamados },
+          { path: 'novo-chamado-usuario', component: NovoChamadoUsuario },
           { path: 'chamado/:id', component: DetalheChamado }
         ]
   },

@@ -281,10 +281,10 @@ app.get('/api/chamados', autenticarToken, async (req, res) => {
     let sql = `
       SELECT SQL_CALC_FOUND_ROWS
         c.*,
-        p.nome_completo AS solicitante_nome,
+        COALESCE(p.nome_completo, c.solicitante_nome_manual) AS solicitante_nome,
         ${SLA_SELECT}
       FROM chamados c
-      JOIN perfis p ON c.criado_por_id = p.id
+      LEFT JOIN perfis p ON c.criado_por_id = p.id
     `;
 
     const conditions = [];
@@ -349,13 +349,15 @@ app.get('/api/chamado/:id', autenticarToken, async (req, res) => {
       SELECT 
         c.*,
         ${SLA_SELECT},
-        p_solicitante.nome_completo AS solicitante_nome,
-        p_solicitante.setor_texto AS solicitante_setor,
+        COALESCE(p_solicitante.nome_completo, c.solicitante_nome_manual) AS solicitante_nome,
+        COALESCE(p_solicitante.setor_texto, c.solicitante_setor_manual) AS solicitante_setor,
         p_solicitante.cargo_texto AS solicitante_cargo,
-        p_tecnico.nome_completo AS tecnico_atribuido_nome 
+        p_tecnico.nome_completo AS tecnico_atribuido_nome,
+        p_registrador.nome_completo AS registrado_por_nome
       FROM chamados c
-      JOIN perfis p_solicitante ON c.criado_por_id = p_solicitante.id
+      LEFT JOIN perfis p_solicitante ON c.criado_por_id = p_solicitante.id
       LEFT JOIN perfis p_tecnico ON c.atribuido_para_id = p_tecnico.id
+      LEFT JOIN perfis p_registrador ON c.registrado_por_id = p_registrador.id
       WHERE c.id = ?
     `;
     const [rows] = await pool.query(sql, [chamadoId]);
@@ -468,6 +470,129 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
     }
 
     res.status(500).json({ message: 'Erro ao salvar dados' });
+  }
+});
+
+app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, upload.single('anexo'), async (req, res) => {
+  try {
+    const {
+      titulo,
+      descricao,
+      tipo,
+      categoria,
+      solicitanteTipo,
+      solicitanteId,
+      solicitanteNomeManual,
+      solicitanteContatoManual,
+      solicitanteSetorManual,
+      origemSolicitacao,
+      observacaoInterna
+    } = req.body;
+
+    const tecnicoId = req.usuario.id;
+    const origemValida = ['telefone', 'presencial', 'whatsapp', 'email', 'outro'];
+    const origem = origemValida.includes(origemSolicitacao) ? origemSolicitacao : 'outro';
+    const abrirParaUsuarioCadastrado = solicitanteTipo === 'cadastrado';
+
+    if (!titulo || !descricao || !tipo || !categoria) {
+      return res.status(400).json({ message: 'Todos os campos obrigatórios devem ser preenchidos.' });
+    }
+
+    if (!['incidente', 'solicitacao'].includes(tipo)) {
+      return res.status(400).json({ message: 'Tipo inválido. Use "incidente" ou "solicitacao".' });
+    }
+
+    if (abrirParaUsuarioCadastrado && !solicitanteId) {
+      return res.status(400).json({ message: 'Selecione o usuário solicitante.' });
+    }
+
+    if (!abrirParaUsuarioCadastrado && !solicitanteNomeManual?.trim()) {
+      return res.status(400).json({ message: 'Informe o nome do solicitante.' });
+    }
+
+    let criadoPorId = null;
+    if (abrirParaUsuarioCadastrado) {
+      const [[solicitante]] = await pool.query('SELECT id FROM perfis WHERE id = ? LIMIT 1', [solicitanteId]);
+      if (!solicitante) {
+        return res.status(404).json({ message: 'Usuário solicitante não encontrado.' });
+      }
+      criadoPorId = Number(solicitanteId);
+    }
+
+    let anexo_url = null;
+
+    if (req.file) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      anexo_url = `${baseUrl}/uploads/${req.file.filename}`;
+    }
+
+    const prioridade = classificarPrioridadeChamado({ titulo, descricao, tipo, categoria });
+
+    const [result] = await pool.query(
+      `INSERT INTO chamados (
+        titulo,
+        descricao,
+        tipo,
+        categoria,
+        prioridade,
+        status,
+        criado_por_id,
+        atribuido_para_id,
+        registrado_por_id,
+        solicitante_nome_manual,
+        solicitante_contato_manual,
+        solicitante_setor_manual,
+        origem_solicitacao,
+        observacao_interna,
+        anexo_url
+      ) VALUES (?, ?, ?, ?, ?, 'em_andamento', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        titulo,
+        descricao,
+        tipo,
+        categoria,
+        prioridade,
+        criadoPorId,
+        tecnicoId,
+        tecnicoId,
+        abrirParaUsuarioCadastrado ? null : solicitanteNomeManual.trim(),
+        abrirParaUsuarioCadastrado ? null : solicitanteContatoManual?.trim() || null,
+        abrirParaUsuarioCadastrado ? null : solicitanteSetorManual?.trim() || null,
+        origem,
+        observacaoInterna?.trim() || null,
+        anexo_url
+      ]
+    );
+
+    const [novoChamadoRows] = await pool.query('SELECT * FROM chamados WHERE id = ?', [result.insertId]);
+    const novoChamado = novoChamadoRows[0];
+
+    if (criadoPorId) {
+      enviarParaUsuario(criadoPorId, 'chamado-atribuido', {
+        chamadoId: novoChamado.id,
+        tipo: 'registrado_por_tecnico',
+        mensagem: `Seu chamado foi registrado pelo técnico ${req.usuario.nome_completo || 'Técnico'}`,
+        tecnicoNome: req.usuario.nome_completo
+      });
+    }
+
+    res.status(201).json(novoChamado);
+  } catch (err) {
+    console.error('Erro ao criar chamado por usuário:', err);
+
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'O anexo excede o tamanho máximo de 5 MB.' });
+      }
+
+      return res.status(400).json({ message: 'Erro ao processar o anexo enviado.' });
+    }
+
+    if (err?.message === 'Tipo de arquivo nÃƒÂ£o permitido.') {
+      return res.status(400).json({ message: 'Formato de anexo inválido. Envie uma imagem JPG, PNG, WEBP ou GIF.' });
+    }
+
+    res.status(500).json({ message: 'Erro ao salvar chamado por usuário' });
   }
 });
 

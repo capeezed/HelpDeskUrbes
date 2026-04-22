@@ -1,0 +1,245 @@
+<app-header></app-header>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="text-green-primary mb-0">Abrir chamado por usuário</h1>
+    <a routerLink="/admin/fila" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form (ngSubmit)="handleNovoChamadoPorUsuario()">
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <h5 class="mb-3">Solicitante</h5>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Tipo de solicitante *</label>
+              <div class="d-flex gap-3 flex-wrap">
+                <label class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="solicitanteTipo"
+                    value="cadastrado"
+                    [(ngModel)]="solicitanteTipo"
+                    (change)="onSolicitanteTipoChange()">
+                  <span class="form-check-label">Usuário cadastrado</span>
+                </label>
+                <label class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="solicitanteTipo"
+                    value="manual"
+                    [(ngModel)]="solicitanteTipo"
+                    (change)="onSolicitanteTipoChange()">
+                  <span class="form-check-label">Sem cadastro</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-3" *ngIf="solicitanteTipo === 'cadastrado'">
+              <label for="solicitanteId" class="form-label">Quem solicitou *</label>
+              <select
+                class="form-select"
+                id="solicitanteId"
+                name="solicitanteId"
+                [(ngModel)]="solicitanteId"
+                [disabled]="carregandoUsuarios">
+                <option [ngValue]="null">Selecione um usuário...</option>
+                <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                  {{ usuario.nome_completo }} - {{ usuario.email }}
+                </option>
+              </select>
+            </div>
+
+            <div *ngIf="solicitanteTipo === 'manual'">
+              <div class="mb-3">
+                <label for="solicitanteNomeManual" class="form-label">Nome do solicitante *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="solicitanteNomeManual"
+                  name="solicitanteNomeManual"
+                  [(ngModel)]="solicitanteNomeManual">
+              </div>
+
+              <div class="mb-3">
+                <label for="solicitanteContatoManual" class="form-label">Contato</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="solicitanteContatoManual"
+                  name="solicitanteContatoManual"
+                  placeholder="Telefone, ramal, e-mail ou WhatsApp"
+                  [(ngModel)]="solicitanteContatoManual">
+              </div>
+
+              <div class="mb-3">
+                <label for="solicitanteSetorManual" class="form-label">Setor</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="solicitanteSetorManual"
+                  name="solicitanteSetorManual"
+                  [(ngModel)]="solicitanteSetorManual">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="origemSolicitacao" class="form-label">Origem do pedido *</label>
+              <select
+                class="form-select"
+                id="origemSolicitacao"
+                name="origemSolicitacao"
+                [(ngModel)]="origemSolicitacao">
+                <option value="telefone">Telefone</option>
+                <option value="presencial">Presencial</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">E-mail</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Técnico registrando</label>
+              <input
+                type="text"
+                class="form-control"
+                [value]="authService.usuarioAtual?.nome_completo || 'Técnico logado'"
+                disabled>
+            </div>
+
+            <div class="mb-3">
+              <label for="observacaoInterna" class="form-label">Observação interna</label>
+              <textarea
+                class="form-control"
+                id="observacaoInterna"
+                name="observacaoInterna"
+                rows="4"
+                [(ngModel)]="observacaoInterna"></textarea>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <h5 class="mb-3">Chamado</h5>
+
+            <div class="mb-4">
+              <label class="form-label fw-bold">Tipo de chamado *</label>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-check p-3 border rounded"
+                       [ngClass]="{'border-danger border-2': tipoSelecionado === 'incidente'}">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      name="tipo"
+                      id="tipoIncidente"
+                      value="incidente"
+                      [(ngModel)]="tipoSelecionado"
+                      (change)="onTipoChange()">
+                    <label class="form-check-label w-100" for="tipoIncidente">
+                      <strong class="text-danger">Incidente</strong>
+                      <small class="d-block text-muted">Problemas, falhas ou indisponibilidade</small>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-check p-3 border rounded"
+                       [ngClass]="{'border-primary border-2': tipoSelecionado === 'solicitacao'}">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      name="tipo"
+                      id="tipoSolicitacao"
+                      value="solicitacao"
+                      [(ngModel)]="tipoSelecionado"
+                      (change)="onTipoChange()">
+                    <label class="form-check-label w-100" for="tipoSolicitacao">
+                      <strong class="text-primary">Solicitação</strong>
+                      <small class="d-block text-muted">Pedido de serviços ou melhorias</small>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="categoria" class="form-label">Categoria *</label>
+              <select
+                class="form-select"
+                id="categoria"
+                name="categoria"
+                [(ngModel)]="categoriaSelecionada">
+                <option value="">Selecione uma categoria...</option>
+                <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="titulo" class="form-label">Título *</label>
+              <input
+                type="text"
+                class="form-control"
+                id="titulo"
+                name="titulo"
+                [(ngModel)]="titulo">
+            </div>
+
+            <div class="mb-3">
+              <label for="descricao" class="form-label">Descrição *</label>
+              <textarea
+                class="form-control"
+                id="descricao"
+                name="descricao"
+                rows="5"
+                [(ngModel)]="descricao"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="anexo" class="form-label">Anexar imagem</label>
+              <input
+                type="file"
+                class="form-control"
+                id="anexo"
+                accept="image/*"
+                (change)="onFileSelected($event)">
+              <div class="paste-zone mt-3" tabindex="0" (paste)="onPasteAreaPaste($event)">
+                <strong>Cole uma imagem aqui</strong>
+                <span class="d-block text-muted">Use Ctrl+V depois de copiar um print.</span>
+              </div>
+              <div class="anexo-info mt-2" *ngIf="arquivoSelecionado">
+                <small class="form-text text-muted">
+                  Arquivo selecionado: {{ arquivoSelecionado.name }}
+                  <span *ngIf="origemAnexo === 'clipboard'">(colado do clipboard)</span>
+                </small>
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="removerAnexo()">
+                  Remover imagem
+                </button>
+              </div>
+              <div class="anexo-preview mt-3" *ngIf="previewAnexoUrl">
+                <div class="anexo-preview-label">Preview da imagem</div>
+                <img [src]="previewAnexoUrl" alt="Preview do anexo" class="img-fluid rounded shadow-sm">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p *ngIf="mensagemErro" class="alert alert-danger text-center mt-3">{{ mensagemErro }}</p>
+        <p *ngIf="mensagemSucesso" class="alert alert-success text-center mt-3">{{ mensagemSucesso }}</p>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+          <button type="submit" class="btn btn-primary btn-lg px-5" [disabled]="isLoading">
+            <span *ngIf="!isLoading">Abrir por usuário</span>
+            <span *ngIf="isLoading">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              Salvando...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

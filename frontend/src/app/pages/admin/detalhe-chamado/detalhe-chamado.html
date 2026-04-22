@@ -64,6 +64,11 @@
             </small>
           </div>
 
+          <div *ngIf="chamado.observacao_interna" class="alert alert-secondary">
+            <strong>Observação interna:</strong>
+            <div style="white-space: pre-wrap;">{{ chamado.observacao_interna }}</div>
+          </div>
+
           <hr>
 
           <h6>Detalhes do Solicitante:</h6>
@@ -72,8 +77,17 @@
             <li><strong>Setor:</strong> {{ chamado.solicitante_setor }}</li>
             <li><strong>Cargo:</strong> {{ chamado.solicitante_cargo }}</li>
             <hr>
-            <li><strong>ID do Usuário:</strong> {{ chamado.criado_por_id }}</li>
+            <li *ngIf="chamado.criado_por_id"><strong>ID do Usuário:</strong> {{ chamado.criado_por_id }}</li>
+            <li *ngIf="chamado.solicitante_contato_manual">
+              <strong>Contato:</strong> {{ chamado.solicitante_contato_manual }}
+            </li>
             <li><strong>Data da Abertura:</strong> {{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}</li>
+            <li *ngIf="chamado.registrado_por_nome">
+              <strong>Registrado por:</strong> {{ chamado.registrado_por_nome }}
+            </li>
+            <li *ngIf="chamado.origem_solicitacao">
+              <strong>Origem:</strong> {{ chamado.origem_solicitacao | titlecase }}
+            </li>
           </ul>
 
           <!-- ===================== CHAT DE COMENTÁRIOS ===================== -->

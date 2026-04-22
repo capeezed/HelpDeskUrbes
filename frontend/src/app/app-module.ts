@@ -22,6 +22,7 @@ import { Estoque } from './pages/admin/estoque/estoque';
 import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
 import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
 import { Dash } from './pages/admin/dash/dash';
+import { NovoChamadoUsuario } from './pages/admin/novo-chamado-usuario/novo-chamado-usuario';
 
 @NgModule({
   declarations: [
@@ -37,8 +38,8 @@ import { Dash } from './pages/admin/dash/dash';
     Estoque,
     AdminUsuarios,
     AdminAvisos,
-    Dash
-    
+    Dash,
+    NovoChamadoUsuario
   ],
   imports: [
     BrowserModule,
