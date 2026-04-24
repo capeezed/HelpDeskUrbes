@@ -49,11 +49,19 @@
       <h6>Descrição:</h6>
       <p class="descricao bg-light p-2 rounded">{{ chamado.descricao }}</p>
 
-      <div *ngIf="chamado.anexo_url" class="mt-3">
-        <h6>Anexo:</h6>
-        <a [href]="chamado.anexo_url" target="_blank">
-          <img [src]="chamado.anexo_url" class="img-fluid rounded border" alt="Anexo do chamado">
-        </a>
+      <div *ngIf="(chamado.anexos?.length || 0) > 0 || chamado.anexo_url" class="mt-3">
+        <h6>Anexos:</h6>
+        <div class="anexos-grid" *ngIf="(chamado.anexos?.length || 0) > 0; else anexoLegado">
+          <a *ngFor="let anexo of chamado.anexos" [href]="anexo.arquivo_url" target="_blank" class="anexo-card">
+            <img [src]="anexo.arquivo_url" class="img-fluid rounded border" [alt]="anexo.nome_original">
+            <small class="text-muted d-block mt-2">{{ anexo.nome_original }}</small>
+          </a>
+        </div>
+        <ng-template #anexoLegado>
+          <a [href]="chamado.anexo_url" target="_blank" class="anexo-card">
+            <img [src]="chamado.anexo_url" class="img-fluid rounded border" alt="Anexo do chamado">
+          </a>
+        </ng-template>
       </div>
 
       <hr>

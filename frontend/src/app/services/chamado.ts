@@ -20,6 +20,7 @@ export interface Chamado {
   criado_em: string; 
   atribuido_para_id: number | null; 
   anexo_url?: string; 
+  anexos?: ChamadoAnexo[];
   solicitante_nome?: string;
   solicitante_setor?: string;
   solicitante_cargo?: string;
@@ -34,6 +35,14 @@ export interface Chamado {
   sla_prazo_em?: string;
   sla_minutos_restantes?: number;
   sla_status?: 'dentro' | 'alerta' | 'vencido' | 'encerrado';
+}
+
+export interface ChamadoAnexo {
+  id: number;
+  arquivo_url: string;
+  nome_original: string;
+  mime_type: string;
+  criado_em: string;
 }
 
 export interface UsuarioSolicitante {

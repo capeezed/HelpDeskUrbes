@@ -100,14 +100,15 @@
             <!-- Anexo -->
             <div class="mb-3">
               <label for="anexo" class="form-label">
-                Anexar Imagem (Opcional)
-                <small class="text-muted">- Ajuda a entender o problema</small>
+                Anexar Imagens (Opcional)
+                <small class="text-muted">- AtÃ© 5 imagens para dar mais contexto</small>
               </label>
               <input 
                 type="file" 
                 class="form-control" 
                 id="anexo"
                 accept="image/*"
+                multiple
                 (change)="onFileSelected($event)">
               <div
                 class="paste-zone mt-3"
@@ -118,21 +119,22 @@
                   Use Ctrl+V depois de copiar um print ou imagem para o clipboard.
                 </span>
               </div>
-              <div class="anexo-info mt-2" *ngIf="arquivoSelecionado">
-                <small class="form-text text-muted">
-                  Arquivo selecionado: {{ arquivoSelecionado.name }}
-                  <span *ngIf="origemAnexo === 'clipboard'">(colado do clipboard)</span>
-                </small>
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary btn-sm"
-                  (click)="removerAnexo()">
-                  Remover imagem
-                </button>
-              </div>
-              <div class="anexo-preview mt-3" *ngIf="previewAnexoUrl">
-                <div class="anexo-preview-label">Preview da imagem</div>
-                <img [src]="previewAnexoUrl" alt="Preview do anexo" class="img-fluid rounded shadow-sm">
+              <div class="anexos-grid mt-3" *ngIf="previewAnexos.length">
+                <div class="anexo-preview" *ngFor="let preview of previewAnexos; let i = index">
+                  <div class="anexo-preview-label d-flex justify-content-between align-items-center gap-2">
+                    <span>
+                      {{ preview.nome }}
+                      <small class="d-block text-muted" *ngIf="preview.origem === 'clipboard'">Colado do clipboard</small>
+                    </span>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm"
+                      (click)="removerAnexo(i)">
+                      Remover
+                    </button>
+                  </div>
+                  <img [src]="preview.url" alt="Preview do anexo" class="img-fluid rounded shadow-sm">
+                </div>
               </div>
             </div>
 

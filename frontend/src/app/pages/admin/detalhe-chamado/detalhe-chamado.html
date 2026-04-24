@@ -54,11 +54,23 @@
           </p>
 
           <!-- Anexo (se existir) -->
-          <div *ngIf="chamado.anexo_url">
-            <h5 class="card-title mt-3">Anexo (Print do Problema):</h5>
-            <a [href]="chamado.anexo_url" target="_blank" rel="noopener noreferrer">
-              <img [src]="chamado.anexo_url" class="img-fluid rounded border" alt="Anexo do chamado">
-            </a>
+          <div *ngIf="(chamado.anexos?.length || 0) > 0 || chamado.anexo_url">
+            <h5 class="card-title mt-3">Anexos:</h5>
+            <div class="anexos-grid" *ngIf="(chamado.anexos?.length || 0) > 0; else anexoLegadoAdmin">
+              <a *ngFor="let anexo of chamado.anexos"
+                 [href]="anexo.arquivo_url"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="anexo-card">
+                <img [src]="anexo.arquivo_url" class="img-fluid rounded border" [alt]="anexo.nome_original">
+                <small class="form-text text-muted d-block mt-2">{{ anexo.nome_original }}</small>
+              </a>
+            </div>
+            <ng-template #anexoLegadoAdmin>
+              <a [href]="chamado.anexo_url" target="_blank" rel="noopener noreferrer" class="anexo-card">
+                <img [src]="chamado.anexo_url" class="img-fluid rounded border" alt="Anexo do chamado">
+              </a>
+            </ng-template>
             <small class="form-text text-muted">
               Clique na imagem para abrir numa nova aba.
             </small>

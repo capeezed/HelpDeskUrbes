@@ -25,9 +25,8 @@ export class NovoChamadoUsuario implements OnInit, OnDestroy {
   tipoSelecionado: 'incidente' | 'solicitacao' = 'incidente';
   categoriaSelecionada = '';
 
-  arquivoSelecionado: File | null = null;
-  origemAnexo: 'upload' | 'clipboard' | null = null;
-  previewAnexoUrl: string | null = null;
+  anexosSelecionados: File[] = [];
+  previewAnexos: { nome: string; url: string; origem: 'upload' | 'clipboard' }[] = [];
 
   isLoading = false;
   carregandoUsuarios = false;
@@ -89,7 +88,7 @@ export class NovoChamadoUsuario implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.clearPreviewUrl();
+    this.clearPreviewUrls();
   }
 
   carregarUsuarios(): void {
@@ -124,25 +123,23 @@ export class NovoChamadoUsuario implements OnInit, OnDestroy {
 
   onFileSelected(event: any): void {
     if (event.target.files && event.target.files.length > 0) {
-      this.arquivoSelecionado = event.target.files[0];
-      this.origemAnexo = 'upload';
-      this.updatePreviewUrl(this.arquivoSelecionado);
-      return;
+      this.adicionarArquivos(Array.from(event.target.files), 'upload');
+      event.target.value = '';
     }
-
-    this.arquivoSelecionado = null;
-    this.origemAnexo = null;
-    this.clearPreviewUrl();
   }
 
   onPasteAreaPaste(event: ClipboardEvent): void {
     this.processarImagemColada(event);
   }
 
-  removerAnexo(): void {
-    this.arquivoSelecionado = null;
-    this.origemAnexo = null;
-    this.clearPreviewUrl();
+  removerAnexo(index: number): void {
+    const preview = this.previewAnexos[index];
+    if (preview) {
+      URL.revokeObjectURL(preview.url);
+    }
+
+    this.previewAnexos.splice(index, 1);
+    this.anexosSelecionados.splice(index, 1);
   }
 
   private processarImagemColada(event: ClipboardEvent): void {
@@ -158,31 +155,42 @@ export class NovoChamadoUsuario implements OnInit, OnDestroy {
       const extension = imageFile.type.split('/')[1] || 'png';
       const fileName = `clipboard-${Date.now()}.${extension}`;
 
-      this.arquivoSelecionado = new File([imageFile], fileName, {
+      const novoArquivo = new File([imageFile], fileName, {
         type: imageFile.type,
         lastModified: Date.now()
       });
-      this.origemAnexo = 'clipboard';
-      this.updatePreviewUrl(this.arquivoSelecionado);
+      this.adicionarArquivos([novoArquivo], 'clipboard');
       this.mensagemErro = '';
       event.preventDefault();
       return;
     }
   }
 
-  private updatePreviewUrl(file: File | null): void {
-    this.clearPreviewUrl();
+  private adicionarArquivos(files: File[], origem: 'upload' | 'clipboard'): void {
+    for (const file of files) {
+      if (this.anexosSelecionados.length >= 5) {
+        this.mensagemErro = 'Você pode enviar até 5 imagens por chamado.';
+        break;
+      }
 
-    if (!file || !file.type.startsWith('image/')) return;
+      if (!file.type.startsWith('image/')) continue;
 
-    this.previewAnexoUrl = URL.createObjectURL(file);
+      this.anexosSelecionados.push(file);
+      this.previewAnexos.push({
+        nome: file.name,
+        origem,
+        url: URL.createObjectURL(file)
+      });
+    }
   }
 
-  private clearPreviewUrl(): void {
-    if (this.previewAnexoUrl) {
-      URL.revokeObjectURL(this.previewAnexoUrl);
-      this.previewAnexoUrl = null;
+  private clearPreviewUrls(): void {
+    for (const preview of this.previewAnexos) {
+      URL.revokeObjectURL(preview.url);
     }
+
+    this.anexosSelecionados = [];
+    this.previewAnexos = [];
   }
 
   handleNovoChamadoPorUsuario(): void {
@@ -223,8 +231,8 @@ export class NovoChamadoUsuario implements OnInit, OnDestroy {
       formData.append('solicitanteSetorManual', this.solicitanteSetorManual.trim());
     }
 
-    if (this.arquivoSelecionado) {
-      formData.append('anexo', this.arquivoSelecionado, this.arquivoSelecionado.name);
+    for (const anexo of this.anexosSelecionados) {
+      formData.append('anexos', anexo, anexo.name);
     }
 
     this.chamadoService.criarChamadoPorUsuario(formData).subscribe({

@@ -14,6 +14,7 @@ const app = express();
 const http = require('http');
 const server = http.createServer(app);
 const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_ATTACHMENTS_PER_TICKET = 5;
 const ALLOWED_UPLOAD_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -84,6 +85,10 @@ const upload = multer({
     cb(null, true);
   }
 });
+const uploadChamadoAnexos = upload.fields([
+  { name: 'anexos', maxCount: MAX_ATTACHMENTS_PER_TICKET },
+  { name: 'anexo', maxCount: 1 }
+]);
 
 // ======================== SOCKET.IO STATE ==================
 /** Mapa userId -> socketId (1:1 simples) */
@@ -262,6 +267,49 @@ function classificarPrioridadeChamado({ titulo, descricao, tipo, categoria }) {
   return 'media';
 }
 
+function getUploadedImages(req) {
+  const arquivos = [];
+  const files = req.files || {};
+
+  if (Array.isArray(files.anexos)) {
+    arquivos.push(...files.anexos);
+  }
+
+  if (Array.isArray(files.anexo)) {
+    arquivos.push(...files.anexo);
+  }
+
+  if (req.file) {
+    arquivos.push(req.file);
+  }
+
+  return arquivos.slice(0, MAX_ATTACHMENTS_PER_TICKET);
+}
+
+function buildAttachmentUrl(req, file) {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  return `${baseUrl}/uploads/${file.filename}`;
+}
+
+async function inserirAnexosChamado(conn, req, chamadoId, arquivos) {
+  if (!arquivos.length) return null;
+
+  const valores = arquivos.map(file => [
+    chamadoId,
+    buildAttachmentUrl(req, file),
+    file.originalname,
+    file.mimetype
+  ]);
+
+  await conn.query(
+    `INSERT INTO chamado_anexos (chamado_id, arquivo_url, nome_original, mime_type)
+     VALUES ?`,
+    [valores]
+  );
+
+  return valores[0][1];
+}
+
 /**
  * GET /api/chamados
  * - Técnico/Admin: vê todos (com nome do solicitante)
@@ -372,6 +420,16 @@ app.get('/api/chamado/:id', autenticarToken, async (req, res) => {
       return res.status(403).json({ message: 'Acesso negado: este chamado não pertence a você.' });
     }
 
+    const [anexos] = await pool.query(
+      `SELECT id, arquivo_url, nome_original, mime_type, criado_em
+       FROM chamado_anexos
+       WHERE chamado_id = ?
+       ORDER BY id ASC`,
+      [chamadoId]
+    );
+
+    chamado.anexos = anexos;
+
     res.json(chamado);
   } catch (err) {
     console.error('Erro ao buscar detalhe do chamado:', err);
@@ -399,7 +457,9 @@ app.get('/api/tecnicos', autenticarToken, apenasTecnicos, async (req, res) => {
  * - Cria chamado (funcionário)
  * - Notifica técnicos (socket: 'novo-chamado')
  */
-app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, res) => {
+app.post('/api/chamado', autenticarToken, uploadChamadoAnexos, async (req, res) => {
+  let conn;
+
   try {
     const { titulo, descricao, tipo, categoria } = req.body; // ADICIONADOS tipo e categoria
     const criado_por_id = req.usuario.id;
@@ -423,21 +483,22 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
 
     const prioridade = classificarPrioridadeChamado({ titulo, descricao, tipo, categoria });
 
-    // SQL atualizado com tipo, categoria e prioridade automatica
-    const sql = `
-      INSERT INTO chamados (titulo, descricao, tipo, categoria, prioridade, criado_por_id, anexo_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    
-    const [result] = await pool.query(sql, [
-      titulo, 
-      descricao, 
-      tipo, 
-      categoria, 
-      prioridade,
-      criado_por_id, 
-      anexo_url
-    ]);
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [result] = await conn.query(
+      `INSERT INTO chamados (titulo, descricao, tipo, categoria, prioridade, criado_por_id, anexo_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [titulo, descricao, tipo, categoria, prioridade, criado_por_id, null]
+    );
+
+    const anexoUrlPrincipal = await inserirAnexosChamado(conn, req, result.insertId, arquivos);
+
+    if (anexoUrlPrincipal) {
+      await conn.query('UPDATE chamados SET anexo_url = ? WHERE id = ?', [anexoUrlPrincipal, result.insertId]);
+    }
+
+    await conn.commit();
     
     const [novoChamadoRows] = await pool.query('SELECT * FROM chamados WHERE id = ?', [result.insertId]);
     const novoChamado = novoChamadoRows[0];
@@ -455,25 +516,30 @@ app.post('/api/chamado', autenticarToken, upload.single('anexo'), async (req, re
 
     res.status(201).json(novoChamado);
   } catch (err) {
+    if (conn) await conn.rollback();
     console.error('Erro ao criar chamado:', err);
 
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'O anexo excede o tamanho mÃ¡ximo de 5 MB.' });
+        return res.status(400).json({ message: 'Um dos anexos excede o tamanho mÃ¡ximo de 5 MB.' });
       }
 
-      return res.status(400).json({ message: 'Erro ao processar o anexo enviado.' });
+      return res.status(400).json({ message: 'Erro ao processar os anexos enviados.' });
     }
 
     if (err?.message === 'Tipo de arquivo nÃ£o permitido.') {
-      return res.status(400).json({ message: 'Formato de anexo invÃ¡lido. Envie uma imagem JPG, PNG, WEBP ou GIF.' });
+      return res.status(400).json({ message: 'Formato de anexo invÃ¡lido. Envie imagens JPG, PNG, WEBP ou GIF.' });
     }
 
     res.status(500).json({ message: 'Erro ao salvar dados' });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
-app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, upload.single('anexo'), async (req, res) => {
+app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, uploadChamadoAnexos, async (req, res) => {
+  let conn;
+
   try {
     const {
       titulo,
@@ -519,16 +585,14 @@ app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, upload.si
       criadoPorId = Number(solicitanteId);
     }
 
-    let anexo_url = null;
-
-    if (req.file) {
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      anexo_url = `${baseUrl}/uploads/${req.file.filename}`;
-    }
+    const arquivos = getUploadedImages(req);
 
     const prioridade = classificarPrioridadeChamado({ titulo, descricao, tipo, categoria });
 
-    const [result] = await pool.query(
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [result] = await conn.query(
       `INSERT INTO chamados (
         titulo,
         descricao,
@@ -560,9 +624,17 @@ app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, upload.si
         abrirParaUsuarioCadastrado ? null : solicitanteSetorManual?.trim() || null,
         origem,
         observacaoInterna?.trim() || null,
-        anexo_url
+        null
       ]
     );
+
+    const anexoUrlPrincipal = await inserirAnexosChamado(conn, req, result.insertId, arquivos);
+
+    if (anexoUrlPrincipal) {
+      await conn.query('UPDATE chamados SET anexo_url = ? WHERE id = ?', [anexoUrlPrincipal, result.insertId]);
+    }
+
+    await conn.commit();
 
     const [novoChamadoRows] = await pool.query('SELECT * FROM chamados WHERE id = ?', [result.insertId]);
     const novoChamado = novoChamadoRows[0];
@@ -578,21 +650,24 @@ app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, upload.si
 
     res.status(201).json(novoChamado);
   } catch (err) {
+    if (conn) await conn.rollback();
     console.error('Erro ao criar chamado por usuário:', err);
 
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'O anexo excede o tamanho máximo de 5 MB.' });
+        return res.status(400).json({ message: 'Um dos anexos excede o tamanho máximo de 5 MB.' });
       }
 
-      return res.status(400).json({ message: 'Erro ao processar o anexo enviado.' });
+      return res.status(400).json({ message: 'Erro ao processar os anexos enviados.' });
     }
 
     if (err?.message === 'Tipo de arquivo nÃƒÂ£o permitido.') {
-      return res.status(400).json({ message: 'Formato de anexo inválido. Envie uma imagem JPG, PNG, WEBP ou GIF.' });
+      return res.status(400).json({ message: 'Formato de anexo inválido. Envie imagens JPG, PNG, WEBP ou GIF.' });
     }
 
     res.status(500).json({ message: 'Erro ao salvar chamado por usuário' });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
