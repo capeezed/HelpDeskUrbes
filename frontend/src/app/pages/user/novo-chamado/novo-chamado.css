@@ -1,16 +1,17 @@
 .paste-zone {
-  border: 2px dashed #adb5bd;
-  border-radius: 0.75rem;
+  border: 2px dashed #b9c8c2;
+  border-radius: 8px;
   padding: 1rem;
-  background: #f8f9fa;
+  background: #f8fbfa;
   cursor: text;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .paste-zone:focus {
   outline: none;
-  border-color: #0d6efd;
-  background: #eef4ff;
+  border-color: var(--green-primary);
+  background: #eefaf5;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 79, 0.12);
 }
 
 .anexos-grid {
@@ -20,10 +21,11 @@
 }
 
 .anexo-preview {
-  border: 1px solid #dee2e6;
-  border-radius: 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
   padding: 0.75rem;
   background: #fff;
+  box-shadow: 0 8px 18px rgba(20, 71, 55, 0.07);
 }
 
 .anexo-preview-label {

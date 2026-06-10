@@ -1,4 +1,7 @@
-<div class="container mt-4" *ngIf="chamado$ | async as chamado; else loadingOrError">
+<app-header></app-header>
+
+<div class="helpdesk-page">
+<div class="container" *ngIf="chamado$ | async as chamado; else loadingOrError">
   
   <!-- Botão de Voltar -->
   <a routerLink="/admin/fila" class="btn btn-outline-secondary mb-3">
@@ -259,6 +262,7 @@
       </div>
     </div>
   </div>
+</div>
 </div>
 
 <ng-template #loadingOrError>

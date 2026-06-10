@@ -1,7 +1,8 @@
 <app-header></app-header>
 
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="helpdesk-page">
+<div class="container">
+  <div class="page-header">
     <h1 class="text-green-primary mb-0">Abrir chamado por usuário</h1>
     <a routerLink="/admin/fila" class="btn btn-outline-secondary">Voltar</a>
   </div>
@@ -129,7 +130,7 @@
               <label class="form-label fw-bold">Tipo de chamado *</label>
               <div class="row g-3">
                 <div class="col-md-6">
-                  <div class="form-check p-3 border rounded"
+                  <div class="form-check p-3 choice-card"
                        [ngClass]="{'border-danger border-2': tipoSelecionado === 'incidente'}">
                     <input
                       class="form-check-input"
@@ -147,7 +148,7 @@
                 </div>
 
                 <div class="col-md-6">
-                  <div class="form-check p-3 border rounded"
+                  <div class="form-check p-3 choice-card"
                        [ngClass]="{'border-primary border-2': tipoSelecionado === 'solicitacao'}">
                     <input
                       class="form-check-input"
@@ -244,4 +245,5 @@
       </form>
     </div>
   </div>
+</div>
 </div>

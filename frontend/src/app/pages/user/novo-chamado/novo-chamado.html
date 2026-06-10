@@ -1,11 +1,17 @@
-<div class="container mt-4">
+<div class="helpdesk-page">
+<div class="container">
   <div class="row justify-content-center">
     <div class="col-lg-8">
-      <div class="card shadow-sm">
-        <div class="card-body p-4">
-          
-          <h2 class="text-green-primary mb-4">Abrir Novo Chamado</h2>
+      <div class="page-header">
+        <div>
+          <p class="page-kicker">Solicitação de suporte</p>
+          <h1 class="page-title">Abrir Novo Chamado</h1>
+          <p class="page-subtitle">Informe o tipo, categoria e detalhes para agilizar o atendimento.</p>
+        </div>
+      </div>
 
+      <div class="card">
+        <div class="card-body p-4">
           <form (ngSubmit)="handleNovoChamado()">
             
             <!-- NOVO: Seleção de Tipo -->
@@ -13,7 +19,7 @@
               <label class="form-label fw-bold">Tipo de Chamado *</label>
               <div class="row g-3">
                 <div class="col-md-6">
-                  <div class="form-check p-3 border rounded" 
+                  <div class="form-check p-3 choice-card" 
                        [ngClass]="{'border-danger border-2': tipoSelecionado === 'incidente'}">
                     <input 
                       class="form-check-input" 
@@ -31,7 +37,7 @@
                 </div>
                 
                 <div class="col-md-6">
-                  <div class="form-check p-3 border rounded"
+                  <div class="form-check p-3 choice-card"
                        [ngClass]="{'border-primary border-2': tipoSelecionado === 'solicitacao'}">
                     <input 
                       class="form-check-input" 
@@ -162,4 +168,5 @@
       </div>
     </div>
   </div>
+</div>
 </div>

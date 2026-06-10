@@ -1,105 +1,137 @@
 <app-header></app-header>
-<div class="container-fluid mt-4 px-4">
-  <h2 class="mb-4 fw-bold">📊 Dashboard</h2>
 
-  <!-- FILTRO -->
-  <div class="card p-3 mb-4 shadow-sm">
-    <div class="row g-3">
-      <div class="col-md-3">
-        <label>Mês</label>
-        <select class="form-select" [(ngModel)]="mes">
-          <option value="">Todos</option>
-          <option *ngFor="let m of meses" [value]="m.valor">{{ m.nome }}</option>
-        </select>
+<div class="helpdesk-page">
+  <div class="container-fluid">
+    <div class="page-header">
+      <div>
+        <p class="page-kicker">Relatórios</p>
+        <h1 class="page-title">Dashboard de Atendimento</h1>
+        <p class="page-subtitle">Analise volume de chamados, status e relatórios técnicos por período.</p>
       </div>
-      <div class="col-md-3">
-        <label>Ano</label>
-        <select class="form-select" [(ngModel)]="ano">
-          <option *ngFor="let a of anos" [value]="a">{{ a }}</option>
-        </select>
-      </div>
-      <div class="col-md-3 d-flex align-items-end">
-        <button class="btn btn-primary w-100" (click)="carregarTudo()">Filtrar</button>
-      </div>
-      <div class="col-md-3 d-flex align-items-end">
-        <button class="btn btn-danger w-100" (click)="exportarPDF()">
-          📄 Exportar PDF
+      <div class="page-actions">
+        <button class="btn btn-danger" (click)="exportarPDF()">
+          <i class="bi bi-file-earmark-pdf me-1"></i>
+          Exportar PDF
         </button>
       </div>
     </div>
-  </div>
 
-  <!-- CARDS -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card card-info">
-        <div class="card-body text-center">
-          <h6>Total Relatórios</h6>
-          <h2>{{ totalRelatorios }}</h2>
+    <div class="filter-panel mb-4">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4 col-lg-3">
+          <label class="form-label">Mês</label>
+          <select class="form-select" [(ngModel)]="mes">
+            <option value="">Todos</option>
+            <option *ngFor="let m of meses" [value]="m.valor">{{ m.nome }}</option>
+          </select>
+        </div>
+        <div class="col-md-4 col-lg-3">
+          <label class="form-label">Ano</label>
+          <select class="form-select" [(ngModel)]="ano">
+            <option *ngFor="let a of anos" [value]="a">{{ a }}</option>
+          </select>
+        </div>
+        <div class="col-md-4 col-lg-3">
+          <button class="btn btn-primary w-100" (click)="carregarTudo()">
+            <i class="bi bi-funnel me-1"></i>
+            Filtrar
+          </button>
         </div>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card card-warning">
-        <div class="card-body text-center">
-          <h6>Chamados Abertos</h6>
-          <h2>{{ totalAbertos }}</h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card card-success">
-        <div class="card-body text-center">
-          <h6>Chamados Fechados</h6>
-          <h2>{{ totalFechados }}</h2>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- GRÁFICOS -->
-  <div class="row g-4 mb-4">
-    <div class="col-lg-6">
-      <div class="card p-3 shadow-sm">
-        <h5>Chamados por Categoria</h5>
-        <div style="height:300px">
-          <canvas id="graficoCategoria"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card p-3 shadow-sm">
-        <h5>Chamados por Status</h5>
-        <div style="height:300px">
-          <canvas id="graficoStatus"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- LISTA DE RELATÓRIOS -->
-  <div class="card p-3 shadow-sm">
-    <h4>📄 Relatórios</h4>
-    <div class="row g-3 mt-2">
-      <div class="col-md-4" *ngFor="let r of relatorios">
-        <div class="card relatorio-card" (click)="abrirRelatorio(r)">
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="metric-card">
           <div class="card-body">
-            <h6>{{ r.titulo }}</h6>
-            <small class="text-muted">Chamado: {{ r.chamado_titulo }}</small>
+            <div>
+              <div class="metric-label">Total Relatórios</div>
+              <p class="metric-value">{{ totalRelatorios }}</p>
+            </div>
+            <span class="metric-icon"><i class="bi bi-file-text"></i></span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card metric-warning">
+          <div class="card-body">
+            <div>
+              <div class="metric-label">Chamados Abertos</div>
+              <p class="metric-value">{{ totalAbertos }}</p>
+            </div>
+            <span class="metric-icon"><i class="bi bi-hourglass-split"></i></span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card metric-success">
+          <div class="card-body">
+            <div>
+              <div class="metric-label">Chamados Fechados</div>
+              <p class="metric-value">{{ totalFechados }}</p>
+            </div>
+            <span class="metric-icon"><i class="bi bi-check2-circle"></i></span>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- MODAL -->
-  <div class="modal-backdrop-custom" *ngIf="relatorioSelecionado">
-    <div class="modal-relatorio">
-      <h4>{{ relatorioSelecionado.titulo }}</h4>
-      <p><strong>Chamado:</strong> {{ relatorioSelecionado.chamado_titulo }}</p>
-      <hr>
-      <p>{{ relatorioSelecionado.relatorio }}</p>
-      <button class="btn btn-secondary mt-3" (click)="fecharRelatorio()">Fechar</button>
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <div class="card chart-card">
+          <div class="card-body">
+            <h2>Chamados por Categoria</h2>
+            <div class="grafico-container">
+              <canvas id="graficoCategoria"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card chart-card">
+          <div class="card-body">
+            <h2>Chamados por Status</h2>
+            <div class="grafico-container">
+              <canvas id="graficoStatus"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+          <div>
+            <p class="page-kicker mb-1">Registros</p>
+            <h2 class="section-title">Relatórios</h2>
+          </div>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-4" *ngFor="let r of relatorios">
+            <button type="button" class="relatorio-card" (click)="abrirRelatorio(r)">
+              <strong>{{ r.titulo }}</strong>
+              <small>Chamado: {{ r.chamado_titulo }}</small>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop-custom" *ngIf="relatorioSelecionado">
+      <div class="modal-relatorio">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <p class="page-kicker mb-1">Relatório técnico</p>
+            <h4>{{ relatorioSelecionado.titulo }}</h4>
+          </div>
+          <button class="btn-close" type="button" aria-label="Fechar" (click)="fecharRelatorio()"></button>
+        </div>
+        <p><strong>Chamado:</strong> {{ relatorioSelecionado.chamado_titulo }}</p>
+        <hr>
+        <p>{{ relatorioSelecionado.relatorio }}</p>
+        <button class="btn btn-secondary mt-3" (click)="fecharRelatorio()">Fechar</button>
+      </div>
     </div>
   </div>
 </div>

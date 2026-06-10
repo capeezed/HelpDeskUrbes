@@ -1,18 +1,26 @@
 <app-header></app-header>
 
-<div class="container mt-4">
+<div class="helpdesk-page">
+<div class="container">
+  <div class="page-header">
+    <div>
+      <p class="page-kicker">Administração</p>
+      <h1 class="page-title">Gerenciar Usuários</h1>
+      <p class="page-subtitle">Atualize permissões de acesso entre funcionário e técnico.</p>
+    </div>
+  </div>
   <h1 class="text-green-primary mb-4">Gerenciar Usuários</h1>
 
   <div *ngIf="mensagem" class="alert alert-success text-center">
     {{ mensagem }}
   </div>
 
-  <div *ngIf="carregando" class="text-center">
+  <div *ngIf="carregando" class="loading-state">
     <div class="spinner-border text-primary"></div>
     <p>Carregando usuários...</p>
   </div>
 
-  <div class="card shadow-sm" *ngIf="!carregando">
+  <div class="table-shell" *ngIf="!carregando">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
@@ -50,4 +58,5 @@
       </table>
     </div>
   </div>
+</div>
 </div>

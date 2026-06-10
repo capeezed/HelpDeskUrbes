@@ -5,15 +5,13 @@
 /* Backdrop compartilhado por ambos os modais */
 .modal-backdrop-custom {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(12, 30, 25, 0.62);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
   overflow-y: auto;
 }
 
@@ -25,7 +23,8 @@
 }
 
 .estoque-modal-card .card {
-  border-radius: 0.75rem;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 /* Modal de movimentação (Entrada/Saída) - Bootstrap padrão */
@@ -35,5 +34,5 @@
 
 .modal-backdrop-custom .modal-content {
   background-color: white; /* garante fundo branco */
-  border-radius: 0.75rem;
+  border-radius: 8px;
 }

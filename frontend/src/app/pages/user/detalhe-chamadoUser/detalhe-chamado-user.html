@@ -1,11 +1,22 @@
 <!-- src/app/pages/user/detalhe-chamado-user/detalhe-chamado-user.component.html -->
 
-<div class="container mt-4" *ngIf="chamado$ | async as chamado; else carregando">
+<div class="helpdesk-page">
+<div class="container" *ngIf="chamado$ | async as chamado; else carregando">
 
   <!-- Voltar -->
-  <a routerLink="/dashboard" class="btn btn-outline-secondary mb-3">
-    &larr; Voltar
-  </a>
+  <div class="page-header">
+    <div>
+      <p class="page-kicker">Detalhes do chamado</p>
+      <h1 class="page-title">{{ chamado.titulo }}</h1>
+      <p class="page-subtitle">Acompanhe histórico, anexos, SLA e mensagens do atendimento.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/dashboard" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+    </div>
+  </div>
 
   <!-- Navegação entre chamados -->
   <div class="d-flex justify-content-between mb-3">
@@ -22,9 +33,9 @@
   </div>
 
   <!-- CARD DETALHES DO CHAMADO -->
-  <div class="card shadow-sm">
+  <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <h4 class="mb-0">{{ chamado.titulo }}</h4>
+      <h4 class="mb-0">Resumo</h4>
       <span class="badge bg-info text-dark fs-6">{{ chamado.status | titlecase }}</span>
     </div>
 
@@ -47,7 +58,7 @@
       <!-- ===================== FIM TIPO E CATEGORIA ===================== -->
 
       <h6>Descrição:</h6>
-      <p class="descricao bg-light p-2 rounded">{{ chamado.descricao }}</p>
+      <p class="descricao content-panel">{{ chamado.descricao }}</p>
 
       <div *ngIf="(chamado.anexos?.length || 0) > 0 || chamado.anexo_url" class="mt-3">
         <h6>Anexos:</h6>
@@ -90,7 +101,7 @@
   </div>
 
   <!-- CHAT -->
-  <div class="card mt-4 shadow-sm">
+  <div class="card mt-4">
     <div class="card-header">
       <h5 class="mb-0">Chat</h5>
     </div>
@@ -126,11 +137,12 @@
     </div>
   </div>
 </div>
+</div>
 
 <!-- LOADING TEMPLATE -->
 <ng-template #carregando>
-  <div class="text-center mt-5">
-    <div class="spinner-border"></div>
+  <div class="loading-state">
+    <div class="spinner-border text-primary"></div>
     <p>Carregando...</p>
   </div>
 </ng-template>

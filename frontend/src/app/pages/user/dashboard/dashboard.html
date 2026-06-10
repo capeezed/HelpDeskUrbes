@@ -1,51 +1,53 @@
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="text-green-primary">Meus Chamados</h1>
-      
-      <button class="btn btn-primary" routerLink="/novo-chamado">
-        Abrir Novo Chamado
-      </button>
+<div class="helpdesk-page">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <p class="page-kicker">Área do solicitante</p>
+        <h1 class="page-title">Meus Chamados</h1>
+        <p class="page-subtitle">Acompanhe o andamento, prioridade e SLA dos seus atendimentos.</p>
+      </div>
+
+      <div class="page-actions">
+        <button class="btn btn-primary" routerLink="/novo-chamado">
+          <i class="bi bi-plus-circle me-1"></i>
+          Abrir Novo Chamado
+        </button>
+      </div>
     </div>
-  
+
     <div *ngIf="chamados$ | async as chamados; else loading">
-      
-      <div *ngIf="chamados.length === 0" class="alert alert-info">
+      <div *ngIf="chamados.length === 0" class="empty-state">
         Você ainda não abriu nenhum chamado. Clique em "Abrir Novo Chamado" para começar.
       </div>
-  
-      <ul class="list-group shadow-sm">
-       <li *ngFor="let chamado of chamados" class="list-group-item d-flex justify-content-between align-items-center">
-  <div>
-    <h5 class="mb-1">{{ chamado.titulo }}</h5>
-    <small class="text-muted d-block">Prioridade: {{ chamado.prioridade | titlecase }}</small>
-    <small class="text-muted d-block">
-      SLA: {{ formatarTempoSla(chamado.sla_minutos_restantes) }}
-    </small>
-  </div>
 
-  <div class="d-flex align-items-center gap-2">
+      <div *ngIf="chamados.length > 0" class="ticket-list">
+        <div *ngFor="let chamado of chamados" class="ticket-card">
+          <div class="ticket-main">
+            <h2>{{ chamado.titulo }}</h2>
+            <div class="ticket-meta">
+              <span><i class="bi bi-flag"></i> Prioridade: {{ chamado.prioridade | titlecase }}</span>
+              <span><i class="bi bi-clock"></i> SLA: {{ formatarTempoSla(chamado.sla_minutos_restantes) }}</span>
+            </div>
+          </div>
 
-    <span class="badge rounded-pill fs-6" [ngClass]="getStatusClass(chamado.status)">
-      {{ chamado.status | titlecase }}
-    </span>
-
-    <!-- ✅ Botão para abrir detalhes -->
-    <span class="badge rounded-pill fs-6" [ngClass]="getSlaClass(chamado.sla_status)">
-      {{ getSlaLabel(chamado.sla_status) }}
-    </span>
-
-    <a [routerLink]="['/meus-chamados/detalhe', chamado.id]" 
-       class="btn btn-outline-primary btn-sm">
-      Ver detalhes
-    </a>
-
-  </div>
-</li>
-      </ul>
+          <div class="ticket-actions">
+            <span class="badge rounded-pill" [ngClass]="getStatusClass(chamado.status)">
+              {{ chamado.status | titlecase }}
+            </span>
+            <span class="badge rounded-pill" [ngClass]="getSlaClass(chamado.sla_status)">
+              {{ getSlaLabel(chamado.sla_status) }}
+            </span>
+            <a [routerLink]="['/meus-chamados/detalhe', chamado.id]"
+               class="btn btn-outline-primary btn-sm">
+              Ver detalhes
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
-  
+
     <ng-template #loading>
-      <div class="text-center mt-5">
+      <div class="loading-state">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Carregando...</span>
         </div>
@@ -53,3 +55,4 @@
       </div>
     </ng-template>
   </div>
+</div>

@@ -1,6 +1,7 @@
 .chat-box {
   max-height: 400px;
   overflow-y: auto;
+  background: #f8fbfa;
 }
 
 .anexos-grid {
@@ -18,18 +19,23 @@
   max-height: 180px;
   object-fit: contain;
   background: #fff;
+  border-radius: 8px;
 }
 
 .msg {
-  background: #f1f1f1;
-  padding: 8px 10px;
-  border-radius: 6px;
-  margin-bottom: 8px;
+  max-width: min(74%, 560px);
+  background: #ffffff;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  margin-bottom: 0.65rem;
+  box-shadow: 0 8px 18px rgba(20, 71, 55, 0.08);
 }
 
 .msg.meu {
-  background: #d1ffd1;
-  border-left: 4px solid #28a745;
+  margin-left: auto;
+  background: #e8f7f1;
+  border-color: #bce2d4;
 }
 
 .msg .autor {
@@ -39,7 +45,13 @@
 
 .msg .data {
   font-size: 11px;
-  color: gray;
+  color: var(--text-muted);
   text-align: right;
   margin-top: 4px;
+}
+
+@media (max-width: 575.98px) {
+  .msg {
+    max-width: 94%;
+  }
 }

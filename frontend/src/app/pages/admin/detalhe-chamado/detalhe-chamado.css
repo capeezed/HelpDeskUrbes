@@ -1,7 +1,10 @@
 .chat-container {
   max-height: 400px;
   overflow-y: auto;
-  padding: 10px;
+  padding: 0.75rem;
+  background: #f8fbfa;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
 }
 
 .anexos-grid {
@@ -19,31 +22,32 @@
   max-height: 180px;
   object-fit: contain;
   background: #fff;
+  border-radius: 8px;
 }
 
 /* Cada mensagem */
 .mensagem {
-  max-width: 60%;
-  border-radius: 12px;
+  max-width: min(72%, 560px);
+  border-radius: 8px;
   padding: 10px 14px;
   margin: 8px 0;
   font-size: 14px;
   line-height: 1.4;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 18px rgba(20, 71, 55, 0.08);
   position: relative;
 }
 
 /* Funcionário (esquerda) */
 .mensagem.func {
   background: #ffffff;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--border-soft);
   align-self: flex-start;
 }
 
 /* Técnico (direita) */
 .mensagem.tec {
-  background: #d9eaff;
-  border: 1px solid #b7d7ff;
+  background: #e8f7f1;
+  border: 1px solid #bce2d4;
   align-self: flex-end;
 }
 
@@ -67,7 +71,7 @@
   align-items: center;
   gap: 10px;
   margin-top: 12px;
-  padding: 5px 0;
+  padding: 0.75rem 0 0;
 }
 
 .enviar-box input {
@@ -90,3 +94,13 @@
 }
 
 .mensagens { max-height: 50vh; overflow-y: auto; }
+
+@media (max-width: 575.98px) {
+  .mensagem {
+    max-width: 92%;
+  }
+
+  .enviar-box {
+    display: grid;
+  }
+}

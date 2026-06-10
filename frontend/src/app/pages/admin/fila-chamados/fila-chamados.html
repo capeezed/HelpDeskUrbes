@@ -1,173 +1,166 @@
-<!-- src/app/pages/admin/fila-chamados/fila-chamados.component.html -->
-
 <app-header></app-header>
 
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="text-green-primary">Fila de Atendimento - TI</h1>
-    <a routerLink="/admin/novo-chamado-usuario" class="btn btn-primary">
-      Abrir por usuário
-    </a>
-  </div>
-
-  <!-- ===================== FILTROS ===================== -->
-  <div class="mb-3">
-    <div class="btn-group" role="group" aria-label="Filtro de Status">
-      <button
-        type="button"
-        class="btn"
-        [class.btn-primary]="(filtroAtual$ | async) === 'aberto'"
-        [class.btn-outline-primary]="(filtroAtual$ | async) !== 'aberto'"
-        (click)="mudarFiltro('aberto')">
-        Abertos
-      </button>
-
-      <button
-        type="button"
-        class="btn"
-        [class.btn-primary]="(filtroAtual$ | async) === 'em_andamento'"
-        [class.btn-outline-primary]="(filtroAtual$ | async) !== 'em_andamento'"
-        (click)="mudarFiltro('em_andamento')">
-        Em Andamento
-      </button>
-
-      <button
-        type="button"
-        class="btn"
-        [class.btn-primary]="(filtroAtual$ | async) === 'pendente'"
-        [class.btn-outline-primary]="(filtroAtual$ | async) !== 'pendente'"
-        (click)="mudarFiltro('pendente')">
-        Pendentes
-      </button>
-
-      <button
-        type="button"
-        class="btn"
-        [class.btn-primary]="(filtroAtual$ | async) === 'fechado'"
-        [class.btn-outline-primary]="(filtroAtual$ | async) !== 'fechado'"
-        (click)="mudarFiltro('fechado')">
-        Fechados
-      </button>
-
-      <button
-        type="button"
-        class="btn"
-        [class.btn-primary]="(filtroAtual$ | async) === ''"
-        [class.btn-outline-primary]="(filtroAtual$ | async) !== ''"
-        (click)="mudarFiltro('')">
-        Todos
-      </button>
-    </div>
-  </div>
-
-  <!-- ===================== LISTA ===================== -->
-  <div *ngIf="chamados$ | async as chamados; else loading">
-
-    <!-- Sem chamados -->
-    <div *ngIf="chamados.length === 0" class="alert alert-info">
-      Não há nenhum chamado na fila no momento. Bom trabalho!
-    </div>
-
-    <!-- Tabela -->
-    <div *ngIf="chamados.length > 0" class="card shadow-sm">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Status</th>
-              <th>Título</th>
-              <th>Solicitante</th>
-              <th>Data/Hora</th>
-              <th>Prioridade</th>
-              <th>SLA</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr *ngFor="let chamado of chamados; trackBy: trackById">
-              <!-- Status -->
-              <td>
-                <span class="badge rounded-pill fs-6"
-                      [ngClass]="getStatusClass(chamado.status)">
-                  {{ chamado.status | titlecase }}
-                </span>
-              </td>
-
-              <!-- Título -->
-              <td>{{ chamado.titulo }}</td>
-
-              <!-- Solicitante -->
-              <td>
-                {{ chamado.solicitante_nome || ('Usuário ID: ' + chamado.criado_por_id) }}
-              </td>
-
-              <!-- Data -->
-              <td>
-                <small>{{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}</small>
-              </td>
-
-              <!-- Prioridade -->
-              <td>
-                <span class="badge"
-                      [ngClass]="getPrioridadeClass(chamado.prioridade)">
-                  {{ chamado.prioridade | titlecase }}
-                </span>
-              </td>
-
-              <!-- SLA -->
-              <td>
-                <span class="badge" [ngClass]="getSlaClass(chamado.sla_status)">
-                  {{ getSlaLabel(chamado.sla_status) }}
-                </span>
-                <div class="small text-muted mt-1">
-                  {{ formatarTempoSla(chamado.sla_minutos_restantes) }}
-                </div>
-              </td>
-
-              <!-- Ações -->
-              <td>
-                <a [routerLink]="['/admin/chamado', chamado.id]"
-                   class="btn btn-outline-primary btn-sm">
-                  Ver Detalhes
-                </a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+<div class="helpdesk-page">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <p class="page-kicker">Atendimento técnico</p>
+        <h1 class="page-title">Fila de Atendimento - TI</h1>
+        <p class="page-subtitle">Priorize chamados por status, SLA e solicitante.</p>
+      </div>
+      <div class="page-actions">
+        <a routerLink="/admin/novo-chamado-usuario" class="btn btn-primary">
+          <i class="bi bi-person-plus me-1"></i>
+          Abrir por usuário
+        </a>
       </div>
     </div>
 
-    <!-- ===================== PAGINAÇÃO ===================== -->
-    <div *ngIf="totalPages > 1"
-         class="d-flex justify-content-between align-items-center mt-3">
+    <div class="filter-panel mb-3">
+      <div class="btn-group" role="group" aria-label="Filtro de Status">
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="(filtroAtual$ | async) === 'aberto'"
+          [class.btn-outline-primary]="(filtroAtual$ | async) !== 'aberto'"
+          (click)="mudarFiltro('aberto')">
+          Abertos
+        </button>
 
-      <button class="btn btn-outline-secondary"
-              (click)="paginaAnterior()"
-              [disabled]="page <= 1">
-        ← Anterior
-      </button>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="(filtroAtual$ | async) === 'em_andamento'"
+          [class.btn-outline-primary]="(filtroAtual$ | async) !== 'em_andamento'"
+          (click)="mudarFiltro('em_andamento')">
+          Em Andamento
+        </button>
 
-      <span class="fw-semibold">
-        Página {{ page }} de {{ totalPages }}
-      </span>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="(filtroAtual$ | async) === 'pendente'"
+          [class.btn-outline-primary]="(filtroAtual$ | async) !== 'pendente'"
+          (click)="mudarFiltro('pendente')">
+          Pendentes
+        </button>
 
-      <button class="btn btn-outline-secondary"
-              (click)="proximaPagina()"
-              [disabled]="page >= totalPages">
-        Próxima →
-      </button>
-    </div>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="(filtroAtual$ | async) === 'fechado'"
+          [class.btn-outline-primary]="(filtroAtual$ | async) !== 'fechado'"
+          (click)="mudarFiltro('fechado')">
+          Fechados
+        </button>
 
-  </div>
-
-  <!-- ===================== LOADING ===================== -->
-  <ng-template #loading>
-    <div class="text-center mt-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Carregando...</span>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="(filtroAtual$ | async) === ''"
+          [class.btn-outline-primary]="(filtroAtual$ | async) !== ''"
+          (click)="mudarFiltro('')">
+          Todos
+        </button>
       </div>
-      <p>Buscando chamados...</p>
     </div>
-  </ng-template>
+
+    <div *ngIf="chamados$ | async as chamados; else loading">
+      <div *ngIf="chamados.length === 0" class="empty-state">
+        Não há nenhum chamado na fila no momento. Bom trabalho!
+      </div>
+
+      <div *ngIf="chamados.length > 0" class="table-shell">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Título</th>
+                <th>Solicitante</th>
+                <th>Data/Hora</th>
+                <th>Prioridade</th>
+                <th>SLA</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let chamado of chamados; trackBy: trackById">
+                <td>
+                  <span class="badge rounded-pill"
+                        [ngClass]="getStatusClass(chamado.status)">
+                    {{ chamado.status | titlecase }}
+                  </span>
+                </td>
+
+                <td class="fw-semibold text-dark">{{ chamado.titulo }}</td>
+
+                <td>
+                  {{ chamado.solicitante_nome || ('Usuário ID: ' + chamado.criado_por_id) }}
+                </td>
+
+                <td>
+                  <small>{{ chamado.criado_em | date:'dd/MM/yyyy HH:mm' }}</small>
+                </td>
+
+                <td>
+                  <span class="badge"
+                        [ngClass]="getPrioridadeClass(chamado.prioridade)">
+                    {{ chamado.prioridade | titlecase }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="badge" [ngClass]="getSlaClass(chamado.sla_status)">
+                    {{ getSlaLabel(chamado.sla_status) }}
+                  </span>
+                  <div class="small text-muted mt-1">
+                    {{ formatarTempoSla(chamado.sla_minutos_restantes) }}
+                  </div>
+                </td>
+
+                <td>
+                  <a [routerLink]="['/admin/chamado', chamado.id]"
+                     class="btn btn-outline-primary btn-sm">
+                    Ver Detalhes
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="totalPages > 1"
+           class="pagination-panel">
+        <button class="btn btn-outline-secondary"
+                (click)="paginaAnterior()"
+                [disabled]="page <= 1">
+          <i class="bi bi-arrow-left"></i>
+          Anterior
+        </button>
+
+        <span class="fw-semibold">
+          Página {{ page }} de {{ totalPages }}
+        </span>
+
+        <button class="btn btn-outline-secondary"
+                (click)="proximaPagina()"
+                [disabled]="page >= totalPages">
+          Próxima
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <ng-template #loading>
+      <div class="loading-state">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+        <p>Buscando chamados...</p>
+      </div>
+    </ng-template>
+  </div>
 </div>
