@@ -8,7 +8,12 @@ const jwt = require('jsonwebtoken');
 
 const pool = require('./db');
 const { autenticarToken, apenasTecnicos } = require('./authMiddleware');
+const crypto = require('crypto'); 
+const nodemailer = require('nodemailer'); 
 
+
+
+console.log('EMAIL:', process.env.BREVO_EMAIL); console.log('SMTP:', process.env.BREVO_SMTP_KEY);
 // ======================== APP/HTTP/WS ======================
 const app = express();
 const http = require('http');
@@ -35,6 +40,18 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 300;
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.BREVO_EMAIL,
+    pass: process.env.BREVO_SMTP_KEY
+  }
+});
+
+
 
 // ======================== MIDDLEWARES ======================
 // CORS genérico
@@ -85,10 +102,7 @@ const upload = multer({
     cb(null, true);
   }
 });
-const uploadChamadoAnexos = upload.fields([
-  { name: 'anexos', maxCount: MAX_ATTACHMENTS_PER_TICKET },
-  { name: 'anexo', maxCount: 1 }
-]);
+const uploadChamadoAnexos = upload.array('anexos', MAX_ATTACHMENTS_PER_TICKET);
 
 // ======================== SOCKET.IO STATE ==================
 /** Mapa userId -> socketId (1:1 simples) */
@@ -268,22 +282,7 @@ function classificarPrioridadeChamado({ titulo, descricao, tipo, categoria }) {
 }
 
 function getUploadedImages(req) {
-  const arquivos = [];
-  const files = req.files || {};
-
-  if (Array.isArray(files.anexos)) {
-    arquivos.push(...files.anexos);
-  }
-
-  if (Array.isArray(files.anexo)) {
-    arquivos.push(...files.anexo);
-  }
-
-  if (req.file) {
-    arquivos.push(req.file);
-  }
-
-  return arquivos.slice(0, MAX_ATTACHMENTS_PER_TICKET);
+  return req.files || [];
 }
 
 function buildAttachmentUrl(req, file) {
@@ -483,6 +482,8 @@ app.post('/api/chamado', autenticarToken, uploadChamadoAnexos, async (req, res) 
 
     const prioridade = classificarPrioridadeChamado({ titulo, descricao, tipo, categoria });
 
+    const arquivos = getUploadedImages(req);
+
     conn = await pool.getConnection();
     await conn.beginTransaction();
 
@@ -585,7 +586,7 @@ app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, uploadCha
       criadoPorId = Number(solicitanteId);
     }
 
-    const arquivos = getUploadedImages(req);
+    
 
     const prioridade = classificarPrioridadeChamado({ titulo, descricao, tipo, categoria });
 
@@ -1144,6 +1145,74 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+app.post('/api/esqueci-senha', async (req, res) => {
+
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      message: 'Email obrigatório.'
+    });
+  }
+
+  try {
+
+    const [rows] = await pool.query(
+      'SELECT * FROM usuarios WHERE email = ?',
+      [email]
+    );
+
+    if (!rows.length) {
+
+      return res.json({
+        message:
+          'Se o email existir, enviaremos um link.'
+      });
+    }
+
+    const usuario = rows[0];
+
+    const token = crypto
+      .randomBytes(32)
+      .toString('hex');
+
+    const expire = new Date(
+      Date.now() + 1000 * 60 * 15
+    );
+
+    await pool.query(
+      `UPDATE usuarios
+       SET reset_token = ?,
+           reset_token_expire = ?
+       WHERE id = ?`,
+      [token, expire, usuario.id]
+    );
+
+    const link =
+      `http://191.242.225.226:300/reset-password/${token}`;
+
+    console.log('LINK RESET:', link);
+
+    const info = await transporter.sendMail({ from: '"TI Desk" <suporte.ti@urbes.com.br>', to: email, subject: 'Recuperação de senha', html: ` <h1>Teste</h1> ` }); console.log(info);
+
+    res.json({
+      message:
+        'Se o email existir, enviaremos um link.'
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      message:
+        'Erro interno ao enviar email.'
+    });
+  }
+});
+
+app.post('/api/resetar-senha/:token', async (req, res) => { const { token } = req.params; const { password } = req.body; if (!password) { return res.status(400).json({ message: 'Senha obrigatória.' }); } try { const [rows] = await pool.query( `SELECT * FROM usuarios WHERE reset_token = ? AND reset_token_expire > NOW()`, [token] ); if (!rows.length) { return res.status(400).json({ message: 'Token inválido ou expirado.' }); } const usuario = rows[0]; const senhaHash = await bcrypt.hash(password, 10); await pool.query( `UPDATE usuarios SET senha_hash = ?, reset_token = NULL, reset_token_expire = NULL WHERE id = ?`, [senhaHash, usuario.id] ); res.json({ message: 'Senha alterada com sucesso.' }); } catch (err) { console.error(err); res.status(500).json({ message: 'Erro ao resetar senha.' }); } });
+
 //sistema de estoque 
 
 app.get('/api/estoque/itens', autenticarToken, apenasTecnicos, async (req, res) => {
@@ -1470,6 +1539,8 @@ app.use((req, res) => {
     }
   });
 });
+
+transporter.verify((error, success) => { if (error) { console.log(error); } else { console.log('SMTP OK'); } });
 
 // ======================== START SERVER =====================
 server.listen(PORT, '0.0.0.0', () => {

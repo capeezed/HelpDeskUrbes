@@ -83,11 +83,6 @@ export class NovoChamado {
     this.clearPreviewUrls();
   }
 
-  @HostListener('document:paste', ['$event'])
-  onDocumentPaste(event: ClipboardEvent): void {
-    this.processarImagemColada(event);
-  }
-
   onFileSelected(event: any): void {
     if (event.target.files && event.target.files.length > 0) {
       this.adicionarArquivos(Array.from(event.target.files), 'upload');

@@ -23,6 +23,8 @@ import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
 import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
 import { Dash } from './pages/admin/dash/dash';
 import { NovoChamadoUsuario } from './pages/admin/novo-chamado-usuario/novo-chamado-usuario';
+import { EsqueciSenha } from './pages/auth/esqueci-senha/esqueci-senha';
+import { ResetPassword } from './pages/auth/reset-password/reset-password';
 
 @NgModule({
   declarations: [
@@ -39,7 +41,9 @@ import { NovoChamadoUsuario } from './pages/admin/novo-chamado-usuario/novo-cham
     AdminUsuarios,
     AdminAvisos,
     Dash,
-    NovoChamadoUsuario
+    NovoChamadoUsuario,
+    EsqueciSenha,
+    ResetPassword
   ],
   imports: [
     BrowserModule,

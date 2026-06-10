@@ -100,4 +100,7 @@ export class AuthService {
   get usuarioAtual(): User | null {
     return this.userSubject.value;
   }
+
+  esqueciSenha(email: string) { return this.http.post( `${this.apiUrl}/esqueci-senha`, { email } ); } resetarSenha(token: string, password: string) { return this.http.post( `${this.apiUrl}/resetar-senha/${token}`, { password } ); }
+
 }

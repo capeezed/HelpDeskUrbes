@@ -6,14 +6,25 @@
         <div class="card-body">
 
           <div class="text-center mb-4">
-            <img src="assets/logo-urbes.png" class="img-fluid mb-3" style="max-height: 80px;">
+            <img
+              src="assets/logo-urbes.png"
+              class="img-fluid mb-3"
+              style="max-height: 80px;">
+
             <h2 class="text-green-primary">TI DESK</h2>
-            <p class="text-muted">Acesse sua conta</p>
+
+            <p class="text-muted">
+              Acesse sua conta
+            </p>
           </div>
 
           <form (ngSubmit)="handleLogin()">
+
             <div class="mb-3">
-              <label class="form-label fw-medium">Email</label>
+              <label class="form-label fw-medium">
+                Email
+              </label>
+
               <input
                 type="email"
                 class="form-control form-control-lg"
@@ -24,7 +35,10 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label fw-medium">Senha</label>
+              <label class="form-label fw-medium">
+                Senha
+              </label>
+
               <input
                 type="password"
                 class="form-control form-control-lg"
@@ -34,21 +48,53 @@
                 required>
             </div>
 
-            <button type="submit" class="btn btn-success btn-lg w-100 mt-2" [disabled]="isLoading">
-              <span *ngIf="!isLoading">Entrar</span>
-              <span *ngIf="isLoading" class="spinner-border spinner-border-sm"></span>
+            <div class="d-flex justify-content-end mt-2 mb-3">
+
+              <a
+                routerLink="/esqueci-senha"
+                class="forgot-link">
+
+                Esqueci minha senha
+
+              </a>
+
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-success btn-lg w-100 mt-2"
+              [disabled]="isLoading">
+
+              <span *ngIf="!isLoading">
+                Entrar
+              </span>
+
+              <span
+                *ngIf="isLoading"
+                class="spinner-border spinner-border-sm">
+              </span>
             </button>
 
-            <div *ngIf="mensagemErro" class="alert alert-danger mt-3 py-2 text-center">
+            <div
+              *ngIf="mensagemErro"
+              class="alert alert-danger mt-3 py-2 text-center">
+
               {{ mensagemErro }}
             </div>
+
           </form>
 
           <div class="text-center mt-4">
             <p class="mb-0 text-muted">
+
               Não tem uma conta?
-              <a routerLink="/cadastro" class="text-green-primary fw-bold text-decoration-none">
+
+              <a
+                routerLink="/cadastro"
+                class="text-green-primary fw-bold text-decoration-none">
+
                 Cadastre-se aqui
+
               </a>
             </p>
           </div>
@@ -59,16 +105,56 @@
 
     <div class="col-12 col-md-7 col-lg-7 col-xl-8 mural-container">
       <div class="card mural-card p-4 shadow-sm border-0 h-100">
+
         <h4 class="mb-4 d-flex align-items-center">
-          <span class="me-2">📢</span> Avisos Gerais
+          <span class="me-2">📢</span>
+          Avisos Gerais
         </h4>
 
-        <div *ngIf="avisos.length === 0" class="text-muted text-center py-5">
+        <div *ngIf="avisos.length === 0"
+             class="text-muted text-center py-5">
+
           <i class="bi bi-info-circle d-block fs-2 mb-2"></i>
+
           Nenhum aviso no momento.
         </div>
 
         <div class="mural-scroll-area">
+
+          <div class="mural-download-card">
+
+            <div class="download-content">
+
+              <div class="download-icon">
+                <i class="bi bi-download"></i>
+              </div>
+
+              <div class="download-text">
+
+                <div class="fw-bold fs-5">
+                  Baixe o aplicativo Help Desk
+                </div>
+
+                <div class="small opacity-75">
+                  Instale o app oficial do TI no seu celular.
+                </div>
+
+              </div>
+
+              <a
+                href="../../../../assets/helpdesk.apk"
+                download
+                class="btn btn-light btn-download">
+
+                <i class="bi bi-download me-2"></i>
+                Baixar APK
+
+              </a>
+
+            </div>
+
+          </div>
+
           <div *ngFor="let aviso of avisos"
                class="mural-aviso"
                [ngClass]="{
@@ -76,11 +162,21 @@
                  'mural-alerta': aviso.tipo === 'alerta',
                  'mural-critico': aviso.tipo === 'critico'
                }">
-            <div class="fw-bold mb-1">{{ aviso.titulo }}</div>
-            <div class="small opacity-90" style="white-space: pre-line;">
-              {{ aviso.mensagem }}
+
+            <div class="fw-bold mb-1">
+              {{ aviso.titulo }}
             </div>
+
+            <div
+              class="small opacity-90"
+              style="white-space: pre-line;">
+
+              {{ aviso.mensagem }}
+
+            </div>
+
           </div>
+
         </div>
       </div>
     </div>

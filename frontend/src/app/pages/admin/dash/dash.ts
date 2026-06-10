@@ -30,7 +30,7 @@ export class Dash implements OnInit {
     { nome: 'Novembro', valor: 11 },
     { nome: 'Dezembro', valor: 12 }
   ];
-  anos = [2024, 2025, 2026];
+  anos = [2026, 2027, 2028, 2029, 2030];
   chartCategoria: any;
   chartStatus: any;
   relatorios: any[] = [];
