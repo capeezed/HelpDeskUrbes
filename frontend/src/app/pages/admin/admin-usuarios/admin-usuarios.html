@@ -1,62 +1,141 @@
 <app-header></app-header>
 
 <div class="helpdesk-page">
-<div class="container">
-  <div class="page-header">
-    <div>
-      <p class="page-kicker">Administração</p>
-      <h1 class="page-title">Gerenciar Usuários</h1>
-      <p class="page-subtitle">Atualize permissões de acesso entre funcionário e técnico.</p>
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <p class="page-kicker">Administração</p>
+        <h1 class="page-title">Gerenciar Usuários</h1>
+        <p class="page-subtitle">Atualize permissões, redefina senhas e remova usuários sem histórico vinculado.</p>
+      </div>
+    </div>
+
+    <div *ngIf="mensagem" class="alert alert-success text-center">
+      {{ mensagem }}
+    </div>
+
+    <div *ngIf="mensagemErro" class="alert alert-danger text-center">
+      {{ mensagemErro }}
+    </div>
+
+    <div *ngIf="carregando" class="loading-state">
+      <div class="spinner-border text-primary"></div>
+      <p>Carregando usuários...</p>
+    </div>
+
+    <div class="table-shell" *ngIf="!carregando">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Nível</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of usuarios">
+              <td class="fw-semibold text-dark">{{ u.nome_completo }}</td>
+              <td>{{ u.email }}</td>
+              <td>
+                <span class="badge" [ngClass]="getNivelClass(u.nivel)">
+                  {{ u.nivel | titlecase }}
+                </span>
+              </td>
+              <td>
+                <div class="user-actions">
+                  <button *ngIf="u.nivel === 'funcionario'"
+                          class="btn btn-warning btn-sm"
+                          (click)="alterarNivel(u, 'tecnico')">
+                    <i class="bi bi-person-gear"></i>
+                    Tornar Técnico
+                  </button>
+
+                  <button *ngIf="u.nivel === 'tecnico'"
+                          class="btn btn-info btn-sm"
+                          (click)="alterarNivel(u, 'funcionario')">
+                    <i class="bi bi-person"></i>
+                    Tornar Funcionário
+                  </button>
+
+                  <button class="btn btn-outline-primary btn-sm"
+                          (click)="abrirModalSenha(u)">
+                    <i class="bi bi-key"></i>
+                    Mudar senha
+                  </button>
+
+                  <button class="btn btn-outline-danger btn-sm"
+                          [disabled]="excluindoId === u.id"
+                          (click)="excluirUsuario(u)">
+                    <span *ngIf="excluindoId !== u.id">
+                      <i class="bi bi-trash"></i>
+                      Excluir
+                    </span>
+                    <span *ngIf="excluindoId === u.id">
+                      <span class="spinner-border spinner-border-sm"></span>
+                      Excluindo...
+                    </span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-  <h1 class="text-green-primary mb-4">Gerenciar Usuários</h1>
 
-  <div *ngIf="mensagem" class="alert alert-success text-center">
-    {{ mensagem }}
-  </div>
+  <div class="modal-backdrop-custom" *ngIf="usuarioSenha">
+    <div class="usuario-modal-card">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <p class="page-kicker mb-1">Segurança</p>
+            <h5 class="mb-0">Mudar senha</h5>
+          </div>
+          <button type="button" class="btn-close" (click)="fecharModalSenha()"></button>
+        </div>
 
-  <div *ngIf="carregando" class="loading-state">
-    <div class="spinner-border text-primary"></div>
-    <p>Carregando usuários...</p>
-  </div>
+        <div class="card-body">
+          <p class="text-muted">
+            Usuário: <strong>{{ usuarioSenha.nome_completo }}</strong>
+          </p>
 
-  <div class="table-shell" *ngIf="!carregando">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Nome</th>
-            <th>Email</th>
-            <th>Nível</th>
-            <th>Ação</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let u of usuarios">
-            <td>{{ u.nome_completo }}</td>
-            <td>{{ u.email }}</td>
-            <td>
-              <span class="badge" [ngClass]="getNivelClass(u.nivel)">
-                {{ u.nivel | titlecase }}
-              </span>
-            </td>
-            <td>
-              <button *ngIf="u.nivel === 'funcionario'"
-                      class="btn btn-warning btn-sm"
-                      (click)="alterarNivel(u, 'tecnico')">
-                Tornar Técnico
-              </button>
+          <div class="mb-3">
+            <label class="form-label">Nova senha</label>
+            <input
+              type="password"
+              class="form-control"
+              [(ngModel)]="novaSenha"
+              autocomplete="new-password">
+            <small class="text-muted">Use entre 8 e 32 caracteres e pelo menos um caractere especial.</small>
+          </div>
 
-              <button *ngIf="u.nivel === 'tecnico'"
-                      class="btn btn-info btn-sm"
-                      (click)="alterarNivel(u, 'funcionario')">
-                Tornar Funcionário
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          <div class="mb-3">
+            <label class="form-label">Confirmar nova senha</label>
+            <input
+              type="password"
+              class="form-control"
+              [(ngModel)]="confirmacaoSenha"
+              autocomplete="new-password"
+              (keydown.enter)="salvarSenha()">
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <button class="btn btn-secondary" (click)="fecharModalSenha()">Cancelar</button>
+          <button class="btn btn-primary"
+                  [disabled]="salvandoSenha || !novaSenha || !confirmacaoSenha"
+                  (click)="salvarSenha()">
+            <span *ngIf="!salvandoSenha">Salvar senha</span>
+            <span *ngIf="salvandoSenha">
+              <span class="spinner-border spinner-border-sm"></span>
+              Salvando...
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 </div>

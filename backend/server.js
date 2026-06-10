@@ -1317,6 +1317,122 @@ app.put('/api/admin/usuarios/:id/nivel', autenticarToken, apenasTecnicos, async 
   }
 });
 
+// PUT /api/admin/usuarios/:id/senha
+app.put('/api/admin/usuarios/:id/senha', autenticarToken, apenasTecnicos, async (req, res) => {
+  const userId = Number(req.params.id);
+  const { senha } = req.body;
+  const senhaRegex = /^(?=.*[!@#$%^&*()_\-+=\[{\]};:'",.<>\/?]).{8,32}$/;
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ message: 'Usuário inválido.' });
+  }
+
+  if (!senhaRegex.test(senha || '')) {
+    return res.status(400).json({
+      message: 'A senha deve ter entre 8 e 32 caracteres e conter ao menos um caractere especial.'
+    });
+  }
+
+  try {
+    const [[usuario]] = await pool.query(
+      `SELECT u.id, p.nivel
+       FROM usuarios u
+       JOIN perfis p ON p.id = u.id
+       WHERE u.id = ?`,
+      [userId]
+    );
+
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    if (usuario.nivel === 'admin' && req.usuario.nivel !== 'admin') {
+      return res.status(403).json({ message: 'Apenas admin pode alterar senha de outro admin.' });
+    }
+
+    const senhaHash = await bcrypt.hash(senha, 10);
+
+    await pool.query(
+      `UPDATE usuarios
+       SET senha_hash = ?, reset_token = NULL, reset_token_expire = NULL
+       WHERE id = ?`,
+      [senhaHash, userId]
+    );
+
+    res.json({ message: 'Senha atualizada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao alterar senha do usuário:', err);
+    res.status(500).json({ message: 'Erro ao alterar senha do usuário.' });
+  }
+});
+
+// DELETE /api/admin/usuarios/:id
+app.delete('/api/admin/usuarios/:id', autenticarToken, apenasTecnicos, async (req, res) => {
+  const userId = Number(req.params.id);
+  let conn;
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ message: 'Usuário inválido.' });
+  }
+
+  if (userId === Number(req.usuario.id)) {
+    return res.status(400).json({ message: 'Você não pode excluir o próprio usuário logado.' });
+  }
+
+  try {
+    const [[usuario]] = await pool.query(
+      `SELECT u.id, p.nivel
+       FROM usuarios u
+       JOIN perfis p ON p.id = u.id
+       WHERE u.id = ?`,
+      [userId]
+    );
+
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    if (usuario.nivel === 'admin') {
+      return res.status(403).json({ message: 'Usuários admin não podem ser excluídos por esta tela.' });
+    }
+
+    const [[vinculos]] = await pool.query(
+      `SELECT
+        (SELECT COUNT(*) FROM chamados
+         WHERE criado_por_id = ? OR atribuido_para_id = ? OR registrado_por_id = ?) AS chamados,
+        (SELECT COUNT(*) FROM comentarios WHERE usuario_id = ?) AS comentarios,
+        (SELECT COUNT(*) FROM relatorios_chamado WHERE tecnico_id = ?) AS relatorios`,
+      [userId, userId, userId, userId, userId]
+    );
+
+    const totalVinculos =
+      Number(vinculos.chamados || 0) +
+      Number(vinculos.comentarios || 0) +
+      Number(vinculos.relatorios || 0);
+
+    if (totalVinculos > 0) {
+      return res.status(409).json({
+        message: 'Este usuário possui chamados, comentários ou relatórios vinculados. Altere o perfil para funcionário/técnico em vez de excluir.'
+      });
+    }
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    await conn.query('DELETE FROM perfis WHERE id = ?', [userId]);
+    await conn.query('DELETE FROM usuarios WHERE id = ?', [userId]);
+
+    await conn.commit();
+    res.json({ message: 'Usuário excluído com sucesso.' });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error('Erro ao excluir usuário:', err);
+    res.status(500).json({ message: 'Erro ao excluir usuário.' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 
 
 // POST /api/estoque/itens/:id/entrada

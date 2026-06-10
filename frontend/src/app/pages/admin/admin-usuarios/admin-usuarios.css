@@ -1,3 +1,43 @@
-.helpdesk-page > .container > h1.text-green-primary {
-  display: none;
+.user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.user-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(12, 30, 25, 0.62);
+}
+
+.usuario-modal-card {
+  width: min(520px, 100%);
+}
+
+.usuario-modal-card .card {
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+}
+
+@media (max-width: 575.98px) {
+  .user-actions {
+    display: grid;
+  }
+
+  .user-actions .btn {
+    justify-content: center;
+  }
 }

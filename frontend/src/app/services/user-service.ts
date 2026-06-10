@@ -24,4 +24,12 @@ export class UserService {
   alterarNivel(id: number, nivel: 'funcionario' | 'tecnico'): Observable<any> {
     return this.http.put(`${this.apiUrl}/admin/usuarios/${id}/nivel`, { nivel });
   }
+
+  alterarSenha(id: number, senha: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/admin/usuarios/${id}/senha`, { senha });
+  }
+
+  excluirUsuario(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/admin/usuarios/${id}`);
+  }
 }
