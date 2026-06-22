@@ -1,0 +1,29 @@
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 30, 25, 0.62);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.anotacao-modal-card {
+  max-width: 760px;
+  width: 92%;
+  margin: 2rem auto;
+}
+
+.anotacao-modal-card .card {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.anotacao-preview {
+  max-width: 520px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

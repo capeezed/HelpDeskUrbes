@@ -1,0 +1,139 @@
+<app-header></app-header>
+
+<div class="helpdesk-page">
+<div class="container">
+  <div class="page-header">
+    <div>
+      <p class="page-kicker">Area restrita da equipe tecnica</p>
+      <h1 class="page-title">Anotações Técnicas</h1>
+      <p class="page-subtitle">Registre credenciais, procedimentos e observacoes internas de suporte.</p>
+    </div>
+    <button class="btn btn-success" (click)="abrirNova()">
+      <i class="bi bi-plus-lg me-1"></i>
+      Nova anotacao
+    </button>
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>Conteudo sensivel.</strong>
+    As anotacoes desta area sao visiveis apenas para a equipe tecnica.
+  </div>
+
+  <div class="filter-panel mb-3">
+    <div class="card-body">
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Buscar por titulo, conteudo ou responsavel..."
+        [(ngModel)]="busca">
+    </div>
+  </div>
+
+  <div *ngIf="mensagem" class="alert alert-success">
+    {{ mensagem }}
+  </div>
+
+  <div *ngIf="mensagemErro" class="alert alert-danger">
+    {{ mensagemErro }}
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2">Carregando anotacoes tecnicas...</p>
+  </div>
+
+  <div *ngIf="!isLoading && anotacoesFiltradas.length === 0" class="empty-state">
+    Nenhuma anotacao tecnica encontrada.
+  </div>
+
+  <div *ngIf="!isLoading && anotacoesFiltradas.length > 0" class="table-shell">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Titulo</th>
+            <th>Responsavel</th>
+            <th>Criada em</th>
+            <th>Ultima atualizacao</th>
+            <th style="width: 170px;">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let anotacao of anotacoesFiltradas">
+            <td>
+              <strong>{{ anotacao.titulo }}</strong>
+              <small class="d-block text-muted anotacao-preview">
+                {{ anotacao.conteudo }}
+              </small>
+            </td>
+            <td>
+              {{ anotacao.criado_por_nome }}
+              <small class="d-block text-muted" *ngIf="anotacao.atualizado_por_nome">
+                Editado por {{ anotacao.atualizado_por_nome }}
+              </small>
+            </td>
+            <td>{{ anotacao.criado_em | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ anotacao.atualizado_em | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>
+              <button
+                class="btn btn-sm btn-outline-secondary me-1"
+                title="Editar anotacao"
+                (click)="abrirEdicao(anotacao)">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button
+                class="btn btn-sm btn-danger"
+                title="Excluir anotacao"
+                (click)="remover(anotacao)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-backdrop-custom" *ngIf="mostrandoModal">
+    <div class="anotacao-modal-card">
+      <div class="card shadow-lg">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            {{ anotacaoEditando ? 'Editar anotacao' : 'Nova anotacao tecnica' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="fecharModal()"></button>
+        </div>
+
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Titulo *</label>
+            <input class="form-control" [(ngModel)]="dadosForm.titulo">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Conteudo *</label>
+            <textarea
+              class="form-control"
+              rows="10"
+              [(ngModel)]="dadosForm.conteudo"></textarea>
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <button class="btn btn-secondary" (click)="fecharModal()">Cancelar</button>
+          <button
+            class="btn btn-success"
+            [disabled]="salvando || !dadosForm.titulo.trim() || !dadosForm.conteudo.trim()"
+            (click)="salvar()">
+            <span *ngIf="!salvando">Salvar</span>
+            <span *ngIf="salvando">
+              <span class="spinner-border spinner-border-sm"></span>
+              Salvando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>

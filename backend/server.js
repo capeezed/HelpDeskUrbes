@@ -309,6 +309,67 @@ async function inserirAnexosChamado(conn, req, chamadoId, arquivos) {
   return valores[0][1];
 }
 
+const ANOTACAO_ENCRYPTION_PREFIX = 'enc:v1:';
+let anotacoesSecretKey;
+
+function getAnotacoesSecret() {
+  if (anotacoesSecretKey) return anotacoesSecretKey;
+
+  const secret = process.env.ANOTACOES_SECRET || process.env.JWT_SECRET;
+
+  if (!secret) {
+    throw new Error('ANOTACOES_SECRET ou JWT_SECRET nao configurado.');
+  }
+
+  anotacoesSecretKey = crypto.scryptSync(secret, 'helpdesk-urbes-anotacoes', 32);
+  return anotacoesSecretKey;
+}
+
+function criptografarAnotacao(conteudo) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', getAnotacoesSecret(), iv);
+  const encrypted = Buffer.concat([
+    cipher.update(String(conteudo), 'utf8'),
+    cipher.final()
+  ]);
+  const tag = cipher.getAuthTag();
+
+  return ANOTACAO_ENCRYPTION_PREFIX + Buffer.from(JSON.stringify({
+    iv: iv.toString('base64'),
+    tag: tag.toString('base64'),
+    data: encrypted.toString('base64')
+  })).toString('base64');
+}
+
+function descriptografarAnotacao(valor) {
+  if (!valor || !String(valor).startsWith(ANOTACAO_ENCRYPTION_PREFIX)) {
+    return valor;
+  }
+
+  const raw = String(valor).slice(ANOTACAO_ENCRYPTION_PREFIX.length);
+  const payload = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    getAnotacoesSecret(),
+    Buffer.from(payload.iv, 'base64')
+  );
+
+  decipher.setAuthTag(Buffer.from(payload.tag, 'base64'));
+
+  return Buffer.concat([
+    decipher.update(Buffer.from(payload.data, 'base64')),
+    decipher.final()
+  ]).toString('utf8');
+}
+
+async function registrarAuditoriaAnotacao(conn, anotacaoId, usuarioId, acao) {
+  await conn.query(
+    `INSERT INTO anotacoes_tecnicas_auditoria (anotacao_id, usuario_id, acao)
+     VALUES (?, ?, ?)`,
+    [anotacaoId, usuarioId, acao]
+  );
+}
+
 /**
  * GET /api/chamados
  * - Técnico/Admin: vê todos (com nome do solicitante)
@@ -840,6 +901,156 @@ app.get('/api/admin/avisos', autenticarToken, async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar avisos admin:', err);
     res.status(500).json({ message: 'Erro ao buscar avisos.' });
+  }
+});
+
+app.get('/api/admin/anotacoes-tecnicas', autenticarToken, apenasTecnicos, async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        a.id,
+        a.titulo,
+        a.conteudo,
+        a.criado_em,
+        a.atualizado_em,
+        a.criado_por_id,
+        a.atualizado_por_id,
+        p_criador.nome_completo AS criado_por_nome,
+        p_editor.nome_completo AS atualizado_por_nome
+      FROM anotacoes_tecnicas a
+      JOIN perfis p_criador ON p_criador.id = a.criado_por_id
+      LEFT JOIN perfis p_editor ON p_editor.id = a.atualizado_por_id
+      ORDER BY a.atualizado_em DESC, a.criado_em DESC
+    `);
+
+    const anotacoes = rows.map(row => ({
+      ...row,
+      conteudo: descriptografarAnotacao(row.conteudo)
+    }));
+
+    res.json(anotacoes);
+  } catch (err) {
+    console.error('Erro ao buscar anotacoes tecnicas:', err);
+    res.status(500).json({ message: 'Erro ao buscar anotacoes tecnicas.' });
+  }
+});
+
+app.post('/api/admin/anotacoes-tecnicas', autenticarToken, apenasTecnicos, async (req, res) => {
+  const { titulo, conteudo } = req.body;
+  let conn;
+
+  if (!titulo?.trim() || !conteudo?.trim()) {
+    return res.status(400).json({ message: 'Titulo e conteudo sao obrigatorios.' });
+  }
+
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [result] = await conn.query(
+      `INSERT INTO anotacoes_tecnicas (titulo, conteudo, criado_por_id, atualizado_por_id)
+       VALUES (?, ?, ?, ?)`,
+      [
+        titulo.trim(),
+        criptografarAnotacao(conteudo.trim()),
+        req.usuario.id,
+        req.usuario.id
+      ]
+    );
+
+    await registrarAuditoriaAnotacao(conn, result.insertId, req.usuario.id, 'criou');
+    await conn.commit();
+
+    res.status(201).json({ message: 'Anotacao criada com sucesso.', id: result.insertId });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error('Erro ao criar anotacao tecnica:', err);
+    res.status(500).json({ message: 'Erro ao criar anotacao tecnica.' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+app.put('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos, async (req, res) => {
+  const anotacaoId = Number(req.params.id);
+  const { titulo, conteudo } = req.body;
+  let conn;
+
+  if (!Number.isInteger(anotacaoId) || anotacaoId <= 0) {
+    return res.status(400).json({ message: 'Anotacao invalida.' });
+  }
+
+  if (!titulo?.trim() || !conteudo?.trim()) {
+    return res.status(400).json({ message: 'Titulo e conteudo sao obrigatorios.' });
+  }
+
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [result] = await conn.query(
+      `UPDATE anotacoes_tecnicas
+       SET titulo = ?, conteudo = ?, atualizado_por_id = ?, atualizado_em = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [
+        titulo.trim(),
+        criptografarAnotacao(conteudo.trim()),
+        req.usuario.id,
+        anotacaoId
+      ]
+    );
+
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ message: 'Anotacao nao encontrada.' });
+    }
+
+    await registrarAuditoriaAnotacao(conn, anotacaoId, req.usuario.id, 'editou');
+    await conn.commit();
+
+    res.json({ message: 'Anotacao atualizada com sucesso.' });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error('Erro ao atualizar anotacao tecnica:', err);
+    res.status(500).json({ message: 'Erro ao atualizar anotacao tecnica.' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+app.delete('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos, async (req, res) => {
+  const anotacaoId = Number(req.params.id);
+  let conn;
+
+  if (!Number.isInteger(anotacaoId) || anotacaoId <= 0) {
+    return res.status(400).json({ message: 'Anotacao invalida.' });
+  }
+
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [[anotacao]] = await conn.query(
+      'SELECT id FROM anotacoes_tecnicas WHERE id = ?',
+      [anotacaoId]
+    );
+
+    if (!anotacao) {
+      await conn.rollback();
+      return res.status(404).json({ message: 'Anotacao nao encontrada.' });
+    }
+
+    await registrarAuditoriaAnotacao(conn, anotacaoId, req.usuario.id, 'excluiu');
+    await conn.query('DELETE FROM anotacoes_tecnicas WHERE id = ?', [anotacaoId]);
+    await conn.commit();
+
+    res.json({ message: 'Anotacao removida com sucesso.' });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error('Erro ao remover anotacao tecnica:', err);
+    res.status(500).json({ message: 'Erro ao remover anotacao tecnica.' });
+  } finally {
+    if (conn) conn.release();
   }
 });
 

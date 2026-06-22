@@ -16,6 +16,7 @@ import { AdminUsuarios } from './pages/admin/admin-usuarios/admin-usuarios';
 import { AdminAvisos } from './pages/admin/adminavisos/admin-avisos';
 import { Dash } from './pages/admin/dash/dash';
 import { NovoChamadoUsuario } from './pages/admin/novo-chamado-usuario/novo-chamado-usuario';
+import { AnotacoesTecnicas } from './pages/admin/anotacoes-tecnicas/anotacoes-tecnicas';
 
 import { EsqueciSenha } from './pages/auth/esqueci-senha/esqueci-senha';
 
@@ -112,6 +113,12 @@ const routes: Routes = [
   {
     path: 'admin/dash',
     component: Dash,
+    canActivate: [AuthGuard, TecnicoGuard]
+  },
+
+  {
+    path: 'admin/anotacoes-tecnicas',
+    component: AnotacoesTecnicas,
     canActivate: [AuthGuard, TecnicoGuard]
   },
 

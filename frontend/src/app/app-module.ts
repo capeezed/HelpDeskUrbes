@@ -25,6 +25,7 @@ import { Dash } from './pages/admin/dash/dash';
 import { NovoChamadoUsuario } from './pages/admin/novo-chamado-usuario/novo-chamado-usuario';
 import { EsqueciSenha } from './pages/auth/esqueci-senha/esqueci-senha';
 import { ResetPassword } from './pages/auth/reset-password/reset-password';
+import { AnotacoesTecnicas } from './pages/admin/anotacoes-tecnicas/anotacoes-tecnicas';
 
 @NgModule({
   declarations: [
@@ -42,6 +43,7 @@ import { ResetPassword } from './pages/auth/reset-password/reset-password';
     AdminAvisos,
     Dash,
     NovoChamadoUsuario,
+    AnotacoesTecnicas,
     EsqueciSenha,
     ResetPassword
   ],
