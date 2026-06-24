@@ -139,8 +139,8 @@ export class AnotacoesTecnicas implements OnInit {
         break;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        this.mensagemErro = `O arquivo "${file.name}" excede o limite de 5 MB.`;
+      if (file.size > 100 * 1024 * 1024) {
+        this.mensagemErro = `O arquivo "${file.name}" excede o limite de 100 MB.`;
         continue;
       }
 

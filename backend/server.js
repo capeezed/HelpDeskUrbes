@@ -19,7 +19,7 @@ console.log('EMAIL:', process.env.BREVO_EMAIL); console.log('SMTP:', process.env
 const app = express();
 const http = require('http');
 const server = http.createServer(app);
-const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_ATTACHMENTS_PER_TICKET = 5;
 const MAX_ATTACHMENTS_PER_NOTE = 10;
 const ALLOWED_UPLOAD_MIME_TYPES = new Set([
@@ -197,7 +197,7 @@ function processarUploadAnotacaoArquivos(req, res, next) {
       removerArquivosEnviados(req.files);
 
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'Um dos arquivos excede o tamanho maximo de 5 MB.' });
+        return res.status(400).json({ message: 'Um dos arquivos excede o tamanho maximo de 100 MB.' });
       }
 
       if (err.code === 'LIMIT_UNEXPECTED_FILE') {
@@ -835,7 +835,7 @@ app.post('/api/chamado', autenticarToken, uploadChamadoAnexos, async (req, res) 
 
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'Um dos anexos excede o tamanho mÃ¡ximo de 5 MB.' });
+        return res.status(400).json({ message: 'Um dos anexos excede o tamanho mÃ¡ximo de 100 MB.' });
       }
 
       return res.status(400).json({ message: 'Erro ao processar os anexos enviados.' });
@@ -969,7 +969,7 @@ app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, uploadCha
 
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'Um dos anexos excede o tamanho máximo de 5 MB.' });
+        return res.status(400).json({ message: 'Um dos anexos excede o tamanho máximo de 100 MB.' });
       }
 
       return res.status(400).json({ message: 'Erro ao processar os anexos enviados.' });
