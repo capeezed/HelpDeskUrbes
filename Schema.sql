@@ -21,7 +21,78 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ 'c83d680f-bb1b-11f0-9545-42afe947779d:1-1806';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ 'c83d680f-bb1b-11f0-9545-42afe947779d:1-1909';
+
+--
+-- Table structure for table `anotacoes_tecnicas`
+--
+
+DROP TABLE IF EXISTS `anotacoes_tecnicas`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `anotacoes_tecnicas` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `titulo` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `conteudo` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `criado_por_id` int NOT NULL,
+  `atualizado_por_id` int DEFAULT NULL,
+  `criado_em` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `atualizado_em` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_anotacoes_tecnicas_criado_por_id` (`criado_por_id`),
+  KEY `idx_anotacoes_tecnicas_atualizado_por_id` (`atualizado_por_id`),
+  KEY `idx_anotacoes_tecnicas_atualizado_em` (`atualizado_em`),
+  CONSTRAINT `fk_anotacoes_tecnicas_atualizado_por` FOREIGN KEY (`atualizado_por_id`) REFERENCES `perfis` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_anotacoes_tecnicas_criado_por` FOREIGN KEY (`criado_por_id`) REFERENCES `perfis` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `anotacoes_tecnicas_auditoria`
+--
+
+DROP TABLE IF EXISTS `anotacoes_tecnicas_auditoria`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `anotacoes_tecnicas_auditoria` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `anotacao_id` int DEFAULT NULL,
+  `usuario_id` int DEFAULT NULL,
+  `acao` enum('criou','editou','excluiu') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `criado_em` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_anotacoes_tecnicas_auditoria_anotacao_id` (`anotacao_id`),
+  KEY `idx_anotacoes_tecnicas_auditoria_usuario_id` (`usuario_id`),
+  KEY `idx_anotacoes_tecnicas_auditoria_criado_em` (`criado_em`),
+  CONSTRAINT `fk_anotacoes_tecnicas_auditoria_anotacao` FOREIGN KEY (`anotacao_id`) REFERENCES `anotacoes_tecnicas` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_anotacoes_tecnicas_auditoria_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `perfis` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `anotacao_arquivos`
+--
+
+DROP TABLE IF EXISTS `anotacao_arquivos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `anotacao_arquivos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `anotacao_id` int NOT NULL,
+  `nome_original` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `arquivo_path` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mime_type` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tamanho` int NOT NULL,
+  `uploaded_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_anotacao_arquivos_anotacao_id` (`anotacao_id`),
+  KEY `idx_anotacao_arquivos_uploaded_by` (`uploaded_by`),
+  KEY `idx_anotacao_arquivos_created_at` (`created_at`),
+  CONSTRAINT `fk_anotacao_arquivos_anotacao` FOREIGN KEY (`anotacao_id`) REFERENCES `anotacoes_tecnicas` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_anotacao_arquivos_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `perfis` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `avisos`
@@ -38,7 +109,7 @@ CREATE TABLE `avisos` (
   `ativo` tinyint(1) DEFAULT '1',
   `criado_em` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -58,7 +129,7 @@ CREATE TABLE `chamado_anexos` (
   PRIMARY KEY (`id`),
   KEY `idx_chamado_anexos_chamado_id` (`chamado_id`),
   CONSTRAINT `fk_chamado_anexos_chamado` FOREIGN KEY (`chamado_id`) REFERENCES `chamados` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -93,7 +164,7 @@ CREATE TABLE `chamados` (
   KEY `idx_chamados_origem_solicitacao` (`origem_solicitacao`),
   CONSTRAINT `chamados_ibfk_1` FOREIGN KEY (`criado_por_id`) REFERENCES `perfis` (`id`) ON DELETE CASCADE,
   CONSTRAINT `chamados_ibfk_2` FOREIGN KEY (`atribuido_para_id`) REFERENCES `perfis` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=126 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=146 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -114,7 +185,7 @@ CREATE TABLE `comentarios` (
   KEY `usuario_id` (`usuario_id`),
   CONSTRAINT `comentarios_ibfk_1` FOREIGN KEY (`chamado_id`) REFERENCES `chamados` (`id`) ON DELETE CASCADE,
   CONSTRAINT `comentarios_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `perfis` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=132 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -217,7 +288,7 @@ CREATE TABLE `usuarios` (
   `reset_token_expire` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=83 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=84 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -230,4 +301,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-10 10:14:19
+-- Dump completed on 2026-06-24 11:45:25

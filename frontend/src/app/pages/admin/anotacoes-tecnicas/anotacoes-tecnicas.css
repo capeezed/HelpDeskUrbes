@@ -27,3 +27,44 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.arquivo-lista {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.arquivo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.arquivo-item strong {
+  display: block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arquivo-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767.98px) {
+  .arquivo-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .arquivo-actions {
+    justify-content: flex-end;
+  }
+}

@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -20,12 +21,68 @@ const http = require('http');
 const server = http.createServer(app);
 const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_ATTACHMENTS_PER_TICKET = 5;
+const MAX_ATTACHMENTS_PER_NOTE = 10;
 const ALLOWED_UPLOAD_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/gif'
 ]);
+const DANGEROUS_UPLOAD_EXTENSIONS = new Set([
+  '.exe',
+  '.bat',
+  '.cmd',
+  '.msi',
+  '.ps1',
+  '.vbs',
+  '.js',
+  '.jar',
+  '.scr',
+  '.com'
+]);
+const ALLOWED_ANOTACAO_FILE_EXTENSIONS = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.webp',
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.txt',
+  '.xls',
+  '.xlsx',
+  '.csv',
+  '.zip',
+  '.rar',
+  '.log',
+  '.sql',
+  '.xml',
+  '.json',
+  '.md'
+]);
+const ALLOWED_ANOTACAO_MIME_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
+  'application/csv',
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/vnd.rar',
+  'application/x-rar-compressed',
+  'application/json',
+  'application/xml',
+  'text/xml',
+  'text/markdown',
+  'application/octet-stream'
+]);
+const ANOTACOES_UPLOAD_DIR = path.join(__dirname, 'private_uploads', 'anotacoes-tecnicas');
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '12h';
 
 // Socket.IO com CORS liberado
@@ -79,6 +136,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ======================== MULTER (UPLOADS) =================
+fs.mkdirSync(ANOTACOES_UPLOAD_DIR, { recursive: true });
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => { cb(null, 'uploads/'); },
   filename: (req, file, cb) => {
@@ -103,6 +162,59 @@ const upload = multer({
   }
 });
 const uploadChamadoAnexos = upload.array('anexos', MAX_ATTACHMENTS_PER_TICKET);
+
+const anotacaoStorage = multer.diskStorage({
+  destination: (req, file, cb) => { cb(null, ANOTACOES_UPLOAD_DIR); },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
+  }
+});
+const uploadAnotacao = multer({
+  storage: anotacaoStorage,
+  limits: {
+    fileSize: MAX_UPLOAD_SIZE_BYTES
+  },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (DANGEROUS_UPLOAD_EXTENSIONS.has(ext) || !ALLOWED_ANOTACAO_FILE_EXTENSIONS.has(ext)) {
+      return cb(new Error('Tipo de arquivo nao permitido.'));
+    }
+
+    if (!ALLOWED_ANOTACAO_MIME_TYPES.has(file.mimetype)) {
+      return cb(new Error('Tipo de arquivo nao permitido.'));
+    }
+
+    cb(null, true);
+  }
+});
+const uploadAnotacaoArquivos = uploadAnotacao.array('arquivos', MAX_ATTACHMENTS_PER_NOTE);
+
+function processarUploadAnotacaoArquivos(req, res, next) {
+  uploadAnotacaoArquivos(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      removerArquivosEnviados(req.files);
+
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'Um dos arquivos excede o tamanho maximo de 5 MB.' });
+      }
+
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ message: 'Limite de arquivos excedido.' });
+      }
+
+      return res.status(400).json({ message: 'Erro ao processar os arquivos enviados.' });
+    }
+
+    if (err) {
+      removerArquivosEnviados(req.files);
+      return res.status(400).json({ message: err.message || 'Arquivo invalido.' });
+    }
+
+    next();
+  });
+}
 
 // ======================== SOCKET.IO STATE ==================
 /** Mapa userId -> socketId (1:1 simples) */
@@ -367,6 +479,146 @@ async function registrarAuditoriaAnotacao(conn, anotacaoId, usuarioId, acao) {
     `INSERT INTO anotacoes_tecnicas_auditoria (anotacao_id, usuario_id, acao)
      VALUES (?, ?, ?)`,
     [anotacaoId, usuarioId, acao]
+  );
+}
+
+function arquivoComecaCom(buffer, bytes) {
+  if (buffer.length < bytes.length) return false;
+  return bytes.every((byte, index) => buffer[index] === byte);
+}
+
+function arquivoTextoSeguro(buffer) {
+  return !buffer.includes(0);
+}
+
+function validarAssinaturaArquivo(file) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  const buffer = fs.readFileSync(file.path);
+
+  if (ext === '.png') return arquivoComecaCom(buffer, [0x89, 0x50, 0x4E, 0x47]);
+  if (ext === '.jpg' || ext === '.jpeg') return arquivoComecaCom(buffer, [0xFF, 0xD8, 0xFF]);
+  if (ext === '.webp') {
+    return buffer.slice(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.slice(8, 12).toString('ascii') === 'WEBP';
+  }
+  if (ext === '.pdf') return arquivoComecaCom(buffer, [0x25, 0x50, 0x44, 0x46]);
+  if (ext === '.zip' || ext === '.docx' || ext === '.xlsx') {
+    return arquivoComecaCom(buffer, [0x50, 0x4B, 0x03, 0x04]) ||
+      arquivoComecaCom(buffer, [0x50, 0x4B, 0x05, 0x06]) ||
+      arquivoComecaCom(buffer, [0x50, 0x4B, 0x07, 0x08]);
+  }
+  if (ext === '.rar') {
+    return arquivoComecaCom(buffer, [0x52, 0x61, 0x72, 0x21, 0x1A, 0x07]);
+  }
+  if (ext === '.doc' || ext === '.xls') {
+    return arquivoComecaCom(buffer, [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]);
+  }
+  if (['.txt', '.csv', '.log', '.sql', '.xml', '.json', '.md'].includes(ext)) {
+    return arquivoTextoSeguro(buffer.slice(0, Math.min(buffer.length, 4096)));
+  }
+
+  return false;
+}
+
+function removerArquivoFisico(arquivoPath) {
+  if (!arquivoPath) return;
+
+  const fullPath = path.resolve(__dirname, arquivoPath);
+  const basePath = path.resolve(ANOTACOES_UPLOAD_DIR);
+
+  if (fullPath !== basePath && !fullPath.startsWith(basePath + path.sep)) return;
+
+  fs.unlink(fullPath, (err) => {
+    if (err && err.code !== 'ENOENT') {
+      console.error('Erro ao remover arquivo de anotacao:', err.message);
+    }
+  });
+}
+
+function removerArquivosEnviados(files) {
+  for (const file of files || []) {
+    removerArquivoFisico(path.relative(__dirname, file.path));
+  }
+}
+
+function getArquivoAnotacaoPath(arquivoPath) {
+  const fullPath = path.resolve(__dirname, arquivoPath);
+  const basePath = path.resolve(ANOTACOES_UPLOAD_DIR);
+
+  if (fullPath !== basePath && !fullPath.startsWith(basePath + path.sep)) {
+    throw new Error('Caminho de arquivo invalido.');
+  }
+
+  return fullPath;
+}
+
+function formatarArquivoAnotacao(row) {
+  return {
+    id: row.id,
+    anotacao_id: row.anotacao_id,
+    nome_original: row.nome_original,
+    mime_type: row.mime_type,
+    tamanho: row.tamanho,
+    uploaded_by: row.uploaded_by,
+    uploaded_by_nome: row.uploaded_by_nome,
+    created_at: row.created_at
+  };
+}
+
+async function listarArquivosAnotacoes(anotacaoIds) {
+  if (!anotacaoIds.length) return new Map();
+
+  const [rows] = await pool.query(
+    `SELECT
+       aa.id,
+       aa.anotacao_id,
+       aa.nome_original,
+       aa.mime_type,
+       aa.tamanho,
+       aa.uploaded_by,
+       aa.created_at,
+       p.nome_completo AS uploaded_by_nome
+     FROM anotacao_arquivos aa
+     LEFT JOIN perfis p ON p.id = aa.uploaded_by
+     WHERE aa.anotacao_id IN (?)
+     ORDER BY aa.created_at DESC, aa.id DESC`,
+    [anotacaoIds]
+  );
+
+  const map = new Map();
+
+  for (const row of rows) {
+    if (!map.has(row.anotacao_id)) map.set(row.anotacao_id, []);
+    map.get(row.anotacao_id).push(formatarArquivoAnotacao(row));
+  }
+
+  return map;
+}
+
+async function inserirArquivosAnotacao(conn, anotacaoId, usuarioId, files) {
+  const arquivos = files || [];
+  if (!arquivos.length) return;
+
+  for (const file of arquivos) {
+    if (!validarAssinaturaArquivo(file)) {
+      throw new Error('Arquivo invalido ou com conteudo nao permitido.');
+    }
+  }
+
+  const valores = arquivos.map(file => [
+    anotacaoId,
+    path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_'),
+    path.relative(__dirname, file.path),
+    file.mimetype,
+    file.size,
+    usuarioId
+  ]);
+
+  await conn.query(
+    `INSERT INTO anotacao_arquivos
+       (anotacao_id, nome_original, arquivo_path, mime_type, tamanho, uploaded_by)
+     VALUES ?`,
+    [valores]
   );
 }
 
@@ -923,9 +1175,12 @@ app.get('/api/admin/anotacoes-tecnicas', autenticarToken, apenasTecnicos, async 
       ORDER BY a.atualizado_em DESC, a.criado_em DESC
     `);
 
+    const arquivosPorAnotacao = await listarArquivosAnotacoes(rows.map(row => row.id));
+
     const anotacoes = rows.map(row => ({
       ...row,
-      conteudo: descriptografarAnotacao(row.conteudo)
+      conteudo: descriptografarAnotacao(row.conteudo),
+      arquivos: arquivosPorAnotacao.get(row.id) || []
     }));
 
     res.json(anotacoes);
@@ -935,11 +1190,12 @@ app.get('/api/admin/anotacoes-tecnicas', autenticarToken, apenasTecnicos, async 
   }
 });
 
-app.post('/api/admin/anotacoes-tecnicas', autenticarToken, apenasTecnicos, async (req, res) => {
+app.post('/api/admin/anotacoes-tecnicas', autenticarToken, apenasTecnicos, processarUploadAnotacaoArquivos, async (req, res) => {
   const { titulo, conteudo } = req.body;
   let conn;
 
   if (!titulo?.trim() || !conteudo?.trim()) {
+    removerArquivosEnviados(req.files);
     return res.status(400).json({ message: 'Titulo e conteudo sao obrigatorios.' });
   }
 
@@ -959,28 +1215,33 @@ app.post('/api/admin/anotacoes-tecnicas', autenticarToken, apenasTecnicos, async
     );
 
     await registrarAuditoriaAnotacao(conn, result.insertId, req.usuario.id, 'criou');
+    await inserirArquivosAnotacao(conn, result.insertId, req.usuario.id, req.files);
     await conn.commit();
 
     res.status(201).json({ message: 'Anotacao criada com sucesso.', id: result.insertId });
   } catch (err) {
     if (conn) await conn.rollback();
+    removerArquivosEnviados(req.files);
     console.error('Erro ao criar anotacao tecnica:', err);
-    res.status(500).json({ message: 'Erro ao criar anotacao tecnica.' });
+    const status = err?.message?.startsWith('Arquivo') ? 400 : 500;
+    res.status(status).json({ message: err?.message || 'Erro ao criar anotacao tecnica.' });
   } finally {
     if (conn) conn.release();
   }
 });
 
-app.put('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos, async (req, res) => {
+app.put('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos, processarUploadAnotacaoArquivos, async (req, res) => {
   const anotacaoId = Number(req.params.id);
   const { titulo, conteudo } = req.body;
   let conn;
 
   if (!Number.isInteger(anotacaoId) || anotacaoId <= 0) {
+    removerArquivosEnviados(req.files);
     return res.status(400).json({ message: 'Anotacao invalida.' });
   }
 
   if (!titulo?.trim() || !conteudo?.trim()) {
+    removerArquivosEnviados(req.files);
     return res.status(400).json({ message: 'Titulo e conteudo sao obrigatorios.' });
   }
 
@@ -1002,17 +1263,100 @@ app.put('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos, as
 
     if (result.affectedRows === 0) {
       await conn.rollback();
+      removerArquivosEnviados(req.files);
       return res.status(404).json({ message: 'Anotacao nao encontrada.' });
     }
 
     await registrarAuditoriaAnotacao(conn, anotacaoId, req.usuario.id, 'editou');
+    await inserirArquivosAnotacao(conn, anotacaoId, req.usuario.id, req.files);
     await conn.commit();
 
     res.json({ message: 'Anotacao atualizada com sucesso.' });
   } catch (err) {
     if (conn) await conn.rollback();
+    removerArquivosEnviados(req.files);
     console.error('Erro ao atualizar anotacao tecnica:', err);
-    res.status(500).json({ message: 'Erro ao atualizar anotacao tecnica.' });
+    const status = err?.message?.startsWith('Arquivo') ? 400 : 500;
+    res.status(status).json({ message: err?.message || 'Erro ao atualizar anotacao tecnica.' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+app.get('/api/admin/anotacoes-tecnicas/:id/arquivos/:arquivoId/download', autenticarToken, apenasTecnicos, async (req, res) => {
+  const anotacaoId = Number(req.params.id);
+  const arquivoId = Number(req.params.arquivoId);
+
+  if (!Number.isInteger(anotacaoId) || anotacaoId <= 0 || !Number.isInteger(arquivoId) || arquivoId <= 0) {
+    return res.status(400).json({ message: 'Arquivo invalido.' });
+  }
+
+  try {
+    const [[arquivo]] = await pool.query(
+      `SELECT id, anotacao_id, nome_original, arquivo_path
+       FROM anotacao_arquivos
+       WHERE id = ? AND anotacao_id = ?`,
+      [arquivoId, anotacaoId]
+    );
+
+    if (!arquivo) {
+      return res.status(404).json({ message: 'Arquivo nao encontrado.' });
+    }
+
+    const fullPath = getArquivoAnotacaoPath(arquivo.arquivo_path);
+
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ message: 'Arquivo fisico nao encontrado.' });
+    }
+
+    res.download(fullPath, arquivo.nome_original);
+  } catch (err) {
+    console.error('Erro ao baixar arquivo de anotacao:', err);
+    res.status(500).json({ message: 'Erro ao baixar arquivo.' });
+  }
+});
+
+app.delete('/api/admin/anotacoes-tecnicas/:id/arquivos/:arquivoId', autenticarToken, apenasTecnicos, async (req, res) => {
+  const anotacaoId = Number(req.params.id);
+  const arquivoId = Number(req.params.arquivoId);
+  let conn;
+  let arquivoPath = null;
+
+  if (!Number.isInteger(anotacaoId) || anotacaoId <= 0 || !Number.isInteger(arquivoId) || arquivoId <= 0) {
+    return res.status(400).json({ message: 'Arquivo invalido.' });
+  }
+
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [[arquivo]] = await conn.query(
+      `SELECT id, arquivo_path
+       FROM anotacao_arquivos
+       WHERE id = ? AND anotacao_id = ?`,
+      [arquivoId, anotacaoId]
+    );
+
+    if (!arquivo) {
+      await conn.rollback();
+      return res.status(404).json({ message: 'Arquivo nao encontrado.' });
+    }
+
+    arquivoPath = arquivo.arquivo_path;
+
+    await conn.query(
+      'DELETE FROM anotacao_arquivos WHERE id = ? AND anotacao_id = ?',
+      [arquivoId, anotacaoId]
+    );
+
+    await conn.commit();
+    removerArquivoFisico(arquivoPath);
+
+    res.json({ message: 'Arquivo removido com sucesso.' });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error('Erro ao remover arquivo de anotacao:', err);
+    res.status(500).json({ message: 'Erro ao remover arquivo.' });
   } finally {
     if (conn) conn.release();
   }
@@ -1021,6 +1365,7 @@ app.put('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos, as
 app.delete('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos, async (req, res) => {
   const anotacaoId = Number(req.params.id);
   let conn;
+  let arquivosRemover = [];
 
   if (!Number.isInteger(anotacaoId) || anotacaoId <= 0) {
     return res.status(400).json({ message: 'Anotacao invalida.' });
@@ -1040,9 +1385,17 @@ app.delete('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos,
       return res.status(404).json({ message: 'Anotacao nao encontrada.' });
     }
 
+    const [arquivos] = await conn.query(
+      'SELECT arquivo_path FROM anotacao_arquivos WHERE anotacao_id = ?',
+      [anotacaoId]
+    );
+    arquivosRemover = arquivos.map(a => a.arquivo_path);
+
     await registrarAuditoriaAnotacao(conn, anotacaoId, req.usuario.id, 'excluiu');
     await conn.query('DELETE FROM anotacoes_tecnicas WHERE id = ?', [anotacaoId]);
     await conn.commit();
+
+    arquivosRemover.forEach(removerArquivoFisico);
 
     res.json({ message: 'Anotacao removida com sucesso.' });
   } catch (err) {

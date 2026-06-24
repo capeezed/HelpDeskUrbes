@@ -55,6 +55,7 @@
             <th>Responsavel</th>
             <th>Criada em</th>
             <th>Ultima atualizacao</th>
+            <th>Anexos</th>
             <th style="width: 170px;">Acoes</th>
           </tr>
         </thead>
@@ -74,6 +75,41 @@
             </td>
             <td>{{ anotacao.criado_em | date:'dd/MM/yyyy HH:mm' }}</td>
             <td>{{ anotacao.atualizado_em | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>
+              <span *ngIf="!anotacao.arquivos.length" class="text-muted">Sem anexos</span>
+              <div *ngIf="anotacao.arquivos.length" class="arquivo-lista">
+                <div class="arquivo-item" *ngFor="let arquivo of anotacao.arquivos">
+                  <div>
+                    <strong>{{ arquivo.nome_original }}</strong>
+                    <small class="d-block text-muted">
+                      {{ getTipoArquivo(arquivo) }} - {{ formatarTamanho(arquivo.tamanho) }} -
+                      {{ arquivo.created_at | date:'dd/MM/yyyy HH:mm' }}
+                    </small>
+                    <small class="d-block text-muted">
+                      Enviado por {{ arquivo.uploaded_by_nome || 'usuario removido' }}
+                    </small>
+                  </div>
+                  <div class="arquivo-actions">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      title="Baixar arquivo"
+                      [disabled]="baixandoArquivoId === arquivo.id"
+                      (click)="baixarArquivo(anotacao, arquivo)">
+                      <i class="bi bi-download"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      title="Remover arquivo"
+                      [disabled]="removendoArquivoId === arquivo.id"
+                      (click)="removerArquivo(anotacao, arquivo)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </td>
             <td>
               <button
                 class="btn btn-sm btn-outline-secondary me-1"
@@ -116,6 +152,76 @@
               class="form-control"
               rows="10"
               [(ngModel)]="dadosForm.conteudo"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">
+              Arquivos anexos
+              <small class="text-muted">- ate 10 arquivos, 5 MB cada</small>
+            </label>
+            <input
+              type="file"
+              class="form-control"
+              [attr.accept]="acceptArquivos"
+              multiple
+              (change)="onFileSelected($event)">
+            <small class="form-text text-muted">
+              Formatos aceitos: imagens, PDF, documentos, planilhas, TXT, ZIP/RAR e arquivos tecnicos.
+            </small>
+          </div>
+
+          <div class="mb-3" *ngIf="anotacaoEditando?.arquivos?.length">
+            <label class="form-label">Arquivos atuais</label>
+            <div class="arquivo-lista">
+              <div class="arquivo-item" *ngFor="let arquivo of anotacaoEditando?.arquivos">
+                <div>
+                  <strong>{{ arquivo.nome_original }}</strong>
+                  <small class="d-block text-muted">
+                    {{ getTipoArquivo(arquivo) }} - {{ formatarTamanho(arquivo.tamanho) }} -
+                    {{ arquivo.created_at | date:'dd/MM/yyyy HH:mm' }}
+                  </small>
+                  <small class="d-block text-muted">
+                    Enviado por {{ arquivo.uploaded_by_nome || 'usuario removido' }}
+                  </small>
+                </div>
+                <div class="arquivo-actions">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    [disabled]="baixandoArquivoId === arquivo.id"
+                    (click)="baixarArquivo(anotacaoEditando!, arquivo)">
+                    Baixar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    [disabled]="removendoArquivoId === arquivo.id"
+                    (click)="removerArquivo(anotacaoEditando!, arquivo)">
+                    Remover
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3" *ngIf="arquivosSelecionados.length">
+            <label class="form-label">Novos arquivos selecionados</label>
+            <div class="arquivo-lista">
+              <div class="arquivo-item" *ngFor="let arquivo of arquivosSelecionados; let i = index">
+                <div>
+                  <strong>{{ arquivo.name }}</strong>
+                  <small class="d-block text-muted">
+                    {{ formatarTamanho(arquivo.size) }}
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  (click)="removerArquivoSelecionado(i)">
+                  Remover
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

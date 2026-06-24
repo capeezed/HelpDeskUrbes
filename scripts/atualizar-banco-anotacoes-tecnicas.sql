@@ -38,3 +38,22 @@ CREATE TABLE IF NOT EXISTS anotacoes_tecnicas_auditoria (
   CONSTRAINT fk_anotacoes_tecnicas_auditoria_usuario
     FOREIGN KEY (usuario_id) REFERENCES perfis (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS anotacao_arquivos (
+  id int NOT NULL AUTO_INCREMENT,
+  anotacao_id int NOT NULL,
+  nome_original varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  arquivo_path varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  mime_type varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  tamanho int NOT NULL,
+  uploaded_by int DEFAULT NULL,
+  created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_anotacao_arquivos_anotacao_id (anotacao_id),
+  KEY idx_anotacao_arquivos_uploaded_by (uploaded_by),
+  KEY idx_anotacao_arquivos_created_at (created_at),
+  CONSTRAINT fk_anotacao_arquivos_anotacao
+    FOREIGN KEY (anotacao_id) REFERENCES anotacoes_tecnicas (id) ON DELETE CASCADE,
+  CONSTRAINT fk_anotacao_arquivos_uploaded_by
+    FOREIGN KEY (uploaded_by) REFERENCES perfis (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
