@@ -111,6 +111,13 @@
                     </div>
                   </ng-template>
 
+                  <div class="arquivo-imagem-meta" *ngIf="isImagem(arquivo)">
+                    <strong>{{ arquivo.nome_original }}</strong>
+                    <small class="d-block text-muted">
+                      {{ getTipoArquivo(arquivo) }} - {{ formatarTamanho(arquivo.tamanho) }}
+                    </small>
+                  </div>
+
                   <div class="arquivo-actions">
                     <button
                       type="button"
@@ -128,12 +135,6 @@
                       (click)="removerArquivo(anotacao, arquivo)">
                       <i class="bi bi-trash"></i>
                     </button>
-                  </div>
-                  <div class="arquivo-imagem-meta" *ngIf="isImagem(arquivo)">
-                    <strong>{{ arquivo.nome_original }}</strong>
-                    <small class="d-block text-muted">
-                      {{ getTipoArquivo(arquivo) }} - {{ formatarTamanho(arquivo.tamanho) }}
-                    </small>
                   </div>
                 </div>
               </div>
@@ -234,6 +235,13 @@
                   </div>
                 </ng-template>
 
+                <div class="arquivo-imagem-meta" *ngIf="isImagem(arquivo)">
+                  <strong>{{ arquivo.nome_original }}</strong>
+                  <small class="d-block text-muted">
+                    {{ getTipoArquivo(arquivo) }} - {{ formatarTamanho(arquivo.tamanho) }}
+                  </small>
+                </div>
+
                 <div class="arquivo-actions">
                   <button
                     type="button"
@@ -249,12 +257,6 @@
                     (click)="removerArquivo(anotacaoEditando!, arquivo)">
                     Remover
                   </button>
-                </div>
-                <div class="arquivo-imagem-meta" *ngIf="isImagem(arquivo)">
-                  <strong>{{ arquivo.nome_original }}</strong>
-                  <small class="d-block text-muted">
-                    {{ getTipoArquivo(arquivo) }} - {{ formatarTamanho(arquivo.tamanho) }}
-                  </small>
                 </div>
               </div>
             </div>
