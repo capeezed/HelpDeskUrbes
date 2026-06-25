@@ -90,8 +90,11 @@
                       [src]="previewUrls[arquivo.id]"
                       [alt]="arquivo.nome_original"
                       class="arquivo-thumb">
-                    <span *ngIf="!previewUrls[arquivo.id]" class="arquivo-thumb-loading">
+                    <span *ngIf="!previewUrls[arquivo.id] && !previewFalhou[arquivo.id]" class="arquivo-thumb-loading">
                       Carregando...
+                    </span>
+                    <span *ngIf="previewFalhou[arquivo.id]" class="arquivo-thumb-loading">
+                      Sem preview
                     </span>
                   </button>
 
@@ -214,8 +217,11 @@
                     [src]="previewUrls[arquivo.id]"
                     [alt]="arquivo.nome_original"
                     class="arquivo-thumb">
-                  <span *ngIf="!previewUrls[arquivo.id]" class="arquivo-thumb-loading">
+                  <span *ngIf="!previewUrls[arquivo.id] && !previewFalhou[arquivo.id]" class="arquivo-thumb-loading">
                     Carregando...
+                  </span>
+                  <span *ngIf="previewFalhou[arquivo.id]" class="arquivo-thumb-loading">
+                    Sem preview
                   </span>
                 </button>
 

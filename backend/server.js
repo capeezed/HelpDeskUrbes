@@ -529,7 +529,8 @@ function validarAssinaturaArquivo(file) {
 function removerArquivoFisico(arquivoPath) {
   if (!arquivoPath) return;
 
-  const fullPath = path.resolve(__dirname, arquivoPath);
+  const normalizedPath = String(arquivoPath).replace(/[\\/]+/g, path.sep);
+  const fullPath = path.resolve(__dirname, normalizedPath);
   const basePath = path.resolve(ANOTACOES_UPLOAD_DIR);
 
   if (fullPath !== basePath && !fullPath.startsWith(basePath + path.sep)) return;
@@ -548,7 +549,8 @@ function removerArquivosEnviados(files) {
 }
 
 function getArquivoAnotacaoPath(arquivoPath) {
-  const fullPath = path.resolve(__dirname, arquivoPath);
+  const normalizedPath = String(arquivoPath || '').replace(/[\\/]+/g, path.sep);
+  const fullPath = path.resolve(__dirname, normalizedPath);
   const basePath = path.resolve(ANOTACOES_UPLOAD_DIR);
 
   if (fullPath !== basePath && !fullPath.startsWith(basePath + path.sep)) {
@@ -1301,11 +1303,11 @@ app.get('/api/admin/anotacoes-tecnicas/:id/arquivos/:arquivoId/preview', autenti
     const [[arquivo]] = await pool.query(
       `SELECT id, anotacao_id, nome_original, arquivo_path, mime_type
        FROM anotacao_arquivos
-       WHERE id = ? AND anotacao_id = ?`,
-      [arquivoId, anotacaoId]
+       WHERE id = ?`,
+      [arquivoId]
     );
 
-    if (!arquivo) {
+    if (!arquivo || Number(arquivo.anotacao_id) !== anotacaoId) {
       return res.status(404).json({ message: 'Arquivo nao encontrado.' });
     }
 
@@ -1340,11 +1342,11 @@ app.get('/api/admin/anotacoes-tecnicas/:id/arquivos/:arquivoId/download', autent
     const [[arquivo]] = await pool.query(
       `SELECT id, anotacao_id, nome_original, arquivo_path
        FROM anotacao_arquivos
-       WHERE id = ? AND anotacao_id = ?`,
-      [arquivoId, anotacaoId]
+       WHERE id = ?`,
+      [arquivoId]
     );
 
-    if (!arquivo) {
+    if (!arquivo || Number(arquivo.anotacao_id) !== anotacaoId) {
       return res.status(404).json({ message: 'Arquivo nao encontrado.' });
     }
 

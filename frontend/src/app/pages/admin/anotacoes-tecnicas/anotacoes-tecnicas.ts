@@ -27,6 +27,7 @@ export class AnotacoesTecnicas implements OnInit, OnDestroy {
   baixandoArquivoId: number | null = null;
   previewUrls: { [arquivoId: number]: string } = {};
   carregandoPreview: { [arquivoId: number]: boolean } = {};
+  previewFalhou: { [arquivoId: number]: boolean } = {};
   imagemAmpliadaUrl = '';
   imagemAmpliadaNome = '';
 
@@ -334,6 +335,7 @@ export class AnotacoesTecnicas implements OnInit, OnDestroy {
         if (!this.isImagem(arquivo) || this.previewUrls[arquivo.id] || this.carregandoPreview[arquivo.id]) continue;
 
         this.carregandoPreview[arquivo.id] = true;
+        this.previewFalhou[arquivo.id] = false;
 
         this.anotacoesService.visualizarArquivo(anotacao.id, arquivo.id).subscribe({
           next: blob => {
@@ -343,6 +345,7 @@ export class AnotacoesTecnicas implements OnInit, OnDestroy {
           error: err => {
             console.error('Erro ao carregar preview:', err);
             this.carregandoPreview[arquivo.id] = false;
+            this.previewFalhou[arquivo.id] = true;
           }
         });
       }
@@ -353,6 +356,7 @@ export class AnotacoesTecnicas implements OnInit, OnDestroy {
     Object.values(this.previewUrls).forEach(url => URL.revokeObjectURL(url));
     this.previewUrls = {};
     this.carregandoPreview = {};
+    this.previewFalhou = {};
     this.fecharImagem();
   }
 
