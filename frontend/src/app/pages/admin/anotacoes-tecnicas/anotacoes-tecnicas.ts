@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import {
   AnotacaoArquivo,
   AnotacaoTecnica,
@@ -11,7 +11,7 @@ import {
   templateUrl: './anotacoes-tecnicas.html',
   styleUrls: ['./anotacoes-tecnicas.css']
 })
-export class AnotacoesTecnicas implements OnInit {
+export class AnotacoesTecnicas implements OnInit, OnDestroy {
 
   anotacoes: AnotacaoTecnica[] = [];
   isLoading = false;
@@ -25,6 +25,10 @@ export class AnotacoesTecnicas implements OnInit {
   arquivosSelecionados: File[] = [];
   removendoArquivoId: number | null = null;
   baixandoArquivoId: number | null = null;
+  previewUrls: { [arquivoId: number]: string } = {};
+  carregandoPreview: { [arquivoId: number]: boolean } = {};
+  imagemAmpliadaUrl = '';
+  imagemAmpliadaNome = '';
 
   dadosForm = {
     titulo: '',
@@ -58,14 +62,20 @@ export class AnotacoesTecnicas implements OnInit {
     this.carregar();
   }
 
+  ngOnDestroy(): void {
+    this.limparPreviewUrls();
+  }
+
   carregar() {
     this.isLoading = true;
     this.limparMensagens();
 
     this.anotacoesService.listar().subscribe({
       next: res => {
+        this.limparPreviewUrls();
         this.anotacoes = res;
         this.isLoading = false;
+        this.carregarPreviewsImagem();
       },
       error: err => {
         console.error('Erro ao carregar anotacoes tecnicas:', err);
@@ -209,6 +219,13 @@ export class AnotacoesTecnicas implements OnInit {
 
     this.anotacoesService.removerArquivo(anotacao.id, arquivo.id).subscribe({
       next: () => {
+        if (this.previewUrls[arquivo.id]) {
+          if (this.imagemAmpliadaUrl === this.previewUrls[arquivo.id]) {
+            this.fecharImagem();
+          }
+          URL.revokeObjectURL(this.previewUrls[arquivo.id]);
+          delete this.previewUrls[arquivo.id];
+        }
         anotacao.arquivos = anotacao.arquivos.filter(a => a.id !== arquivo.id);
         if (this.anotacaoEditando?.id === anotacao.id) {
           this.anotacaoEditando.arquivos = anotacao.arquivos;
@@ -245,6 +262,36 @@ export class AnotacoesTecnicas implements OnInit {
     });
   }
 
+  isImagem(arquivo: AnotacaoArquivo): boolean {
+    return arquivo.mime_type.startsWith('image/');
+  }
+
+  abrirImagem(arquivo: AnotacaoArquivo) {
+    const url = this.previewUrls[arquivo.id];
+    if (!url) return;
+
+    this.imagemAmpliadaUrl = url;
+    this.imagemAmpliadaNome = arquivo.nome_original;
+  }
+
+  fecharImagem() {
+    this.imagemAmpliadaUrl = '';
+    this.imagemAmpliadaNome = '';
+  }
+
+  getIconeArquivo(arquivo: AnotacaoArquivo): string {
+    const mime = arquivo.mime_type || '';
+    const ext = this.getExtensaoArquivo(arquivo.nome_original);
+
+    if (mime.includes('pdf') || ext === '.pdf') return 'bi-file-earmark-pdf';
+    if (mime.includes('zip') || mime.includes('rar') || ['.zip', '.rar'].includes(ext)) return 'bi-file-earmark-zip';
+    if (mime.includes('word') || ['.doc', '.docx'].includes(ext)) return 'bi-file-earmark-word';
+    if (mime.includes('excel') || mime.includes('spreadsheet') || ['.xls', '.xlsx', '.csv'].includes(ext)) return 'bi-file-earmark-excel';
+    if (mime.startsWith('text/') || ['.txt', '.log', '.md', '.sql'].includes(ext)) return 'bi-file-earmark-text';
+
+    return 'bi-file-earmark';
+  }
+
   formatarTamanho(bytes: number): string {
     if (!bytes) return '0 KB';
 
@@ -279,6 +326,34 @@ export class AnotacoesTecnicas implements OnInit {
   private limparMensagens() {
     this.mensagem = '';
     this.mensagemErro = '';
+  }
+
+  private carregarPreviewsImagem() {
+    for (const anotacao of this.anotacoes) {
+      for (const arquivo of anotacao.arquivos) {
+        if (!this.isImagem(arquivo) || this.previewUrls[arquivo.id] || this.carregandoPreview[arquivo.id]) continue;
+
+        this.carregandoPreview[arquivo.id] = true;
+
+        this.anotacoesService.visualizarArquivo(anotacao.id, arquivo.id).subscribe({
+          next: blob => {
+            this.previewUrls[arquivo.id] = URL.createObjectURL(blob);
+            this.carregandoPreview[arquivo.id] = false;
+          },
+          error: err => {
+            console.error('Erro ao carregar preview:', err);
+            this.carregandoPreview[arquivo.id] = false;
+          }
+        });
+      }
+    }
+  }
+
+  private limparPreviewUrls() {
+    Object.values(this.previewUrls).forEach(url => URL.revokeObjectURL(url));
+    this.previewUrls = {};
+    this.carregandoPreview = {};
+    this.fecharImagem();
   }
 
   private getExtensaoArquivo(nome: string): string {

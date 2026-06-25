@@ -45,6 +45,7 @@ const ALLOWED_ANOTACAO_FILE_EXTENSIONS = new Set([
   '.jpg',
   '.jpeg',
   '.webp',
+  '.gif',
   '.pdf',
   '.doc',
   '.docx',
@@ -64,6 +65,7 @@ const ALLOWED_ANOTACAO_MIME_TYPES = new Set([
   'image/png',
   'image/jpeg',
   'image/webp',
+  'image/gif',
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -500,6 +502,10 @@ function validarAssinaturaArquivo(file) {
   if (ext === '.webp') {
     return buffer.slice(0, 4).toString('ascii') === 'RIFF' &&
       buffer.slice(8, 12).toString('ascii') === 'WEBP';
+  }
+  if (ext === '.gif') {
+    const signature = buffer.slice(0, 6).toString('ascii');
+    return signature === 'GIF87a' || signature === 'GIF89a';
   }
   if (ext === '.pdf') return arquivoComecaCom(buffer, [0x25, 0x50, 0x44, 0x46]);
   if (ext === '.zip' || ext === '.docx' || ext === '.xlsx') {
@@ -1280,6 +1286,45 @@ app.put('/api/admin/anotacoes-tecnicas/:id', autenticarToken, apenasTecnicos, pr
     res.status(status).json({ message: err?.message || 'Erro ao atualizar anotacao tecnica.' });
   } finally {
     if (conn) conn.release();
+  }
+});
+
+app.get('/api/admin/anotacoes-tecnicas/:id/arquivos/:arquivoId/preview', autenticarToken, apenasTecnicos, async (req, res) => {
+  const anotacaoId = Number(req.params.id);
+  const arquivoId = Number(req.params.arquivoId);
+
+  if (!Number.isInteger(anotacaoId) || anotacaoId <= 0 || !Number.isInteger(arquivoId) || arquivoId <= 0) {
+    return res.status(400).json({ message: 'Arquivo invalido.' });
+  }
+
+  try {
+    const [[arquivo]] = await pool.query(
+      `SELECT id, anotacao_id, nome_original, arquivo_path, mime_type
+       FROM anotacao_arquivos
+       WHERE id = ? AND anotacao_id = ?`,
+      [arquivoId, anotacaoId]
+    );
+
+    if (!arquivo) {
+      return res.status(404).json({ message: 'Arquivo nao encontrado.' });
+    }
+
+    if (!String(arquivo.mime_type || '').startsWith('image/')) {
+      return res.status(400).json({ message: 'Preview disponivel apenas para imagens.' });
+    }
+
+    const fullPath = getArquivoAnotacaoPath(arquivo.arquivo_path);
+
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ message: 'Arquivo fisico nao encontrado.' });
+    }
+
+    res.setHeader('Content-Type', arquivo.mime_type);
+    res.setHeader('Content-Disposition', `inline; filename="${path.basename(arquivo.nome_original)}"`);
+    res.sendFile(fullPath);
+  } catch (err) {
+    console.error('Erro ao visualizar arquivo de anotacao:', err);
+    res.status(500).json({ message: 'Erro ao visualizar arquivo.' });
   }
 });
 

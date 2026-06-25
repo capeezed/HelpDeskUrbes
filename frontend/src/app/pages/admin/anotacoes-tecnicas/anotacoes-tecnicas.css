@@ -16,9 +16,29 @@
   margin: 2rem auto;
 }
 
+.imagem-preview-modal {
+  max-width: min(960px, 96vw);
+  width: 96vw;
+  margin: 2rem auto;
+}
+
 .anotacao-modal-card .card {
   border-radius: 8px;
   overflow: hidden;
+}
+
+.imagem-preview-modal .card {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.imagem-preview-grande {
+  display: block;
+  max-width: 100%;
+  max-height: 78vh;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 .anotacao-preview {
@@ -81,8 +101,65 @@
   background: #fff;
 }
 
+.arquivo-info {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.arquivo-info > div {
+  min-width: 0;
+}
+
+.arquivo-icon {
+  flex-shrink: 0;
+  color: var(--green-primary);
+  font-size: 1.55rem;
+}
+
+.arquivo-imagem-item {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: center;
+}
+
 .anotacoes-table .arquivo-item {
   padding: 0.5rem;
+}
+
+.arquivo-thumb-button {
+  display: block;
+  width: 74px;
+  height: 58px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #f8fbfa;
+}
+
+.arquivo-thumb-button:disabled {
+  cursor: wait;
+}
+
+.arquivo-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arquivo-thumb-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.arquivo-imagem-meta {
+  min-width: 0;
 }
 
 .arquivo-item strong {
@@ -118,6 +195,15 @@
   .arquivo-item {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .arquivo-imagem-item {
+    grid-template-columns: 1fr;
+  }
+
+  .arquivo-thumb-button {
+    width: 100%;
+    height: 150px;
   }
 
   .arquivo-actions {

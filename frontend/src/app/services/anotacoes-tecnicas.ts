@@ -58,4 +58,10 @@ export class AnotacoesTecnicasService {
       responseType: 'blob'
     });
   }
+
+  visualizarArquivo(anotacaoId: number, arquivoId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${anotacaoId}/arquivos/${arquivoId}/preview`, {
+      responseType: 'blob'
+    });
+  }
 }
