@@ -60,8 +60,6 @@ export class AnotacoesTecnicasService {
   }
 
   visualizarArquivo(anotacaoId: number, arquivoId: number): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/${anotacaoId}/arquivos/${arquivoId}/preview`, {
-      responseType: 'blob'
-    });
+    return this.baixarArquivo(anotacaoId, arquivoId);
   }
 }
