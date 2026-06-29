@@ -672,7 +672,9 @@ app.get('/api/chamados', autenticarToken, async (req, res) => {
       params.push(usuario.id);
     }
 
-    if (status) {
+    if (status === 'fechado') {
+      conditions.push("c.status IN ('fechado', 'resolvido')");
+    } else if (status) {
       conditions.push('c.status = ?');
       params.push(status);
     }
