@@ -10,6 +10,7 @@ import { AuthService } from './auth.service';
 // Interface (COMPLETA E CORRIGIDA)
 export interface Chamado {
   id: number;
+  ticket_codigo?: string;
   titulo: string;
   descricao: string;
   tipo: 'incidente' | 'solicitacao';     // ✅ JÁ TEM
@@ -108,7 +109,8 @@ export class ChamadoService {
   getMeusChamados(
   status: string | undefined,
   page: number = 1,
-  limit: number = 20
+  limit: number = 20,
+  busca: string = ''
 ): Observable<{
   data: Chamado[];
   page: number;
@@ -122,6 +124,10 @@ export class ChamadoService {
 
   if (status) {
     httpParams = httpParams.set('status', status);
+  }
+
+  if (busca.trim()) {
+    httpParams = httpParams.set('busca', busca.trim());
   }
 
   return this.http.get<{

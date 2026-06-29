@@ -28,7 +28,12 @@
     <div class="col-lg-8">
       <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <h4 class="mb-0 text-green-primary">{{ chamado.titulo }}</h4>
+          <div>
+            <span class="badge bg-light text-dark border mb-2" *ngIf="chamado.ticket_codigo">
+              #{{ chamado.ticket_codigo }}
+            </span>
+            <h4 class="mb-0 text-green-primary">{{ chamado.titulo }}</h4>
+          </div>
           <span class="badge rounded-pill fs-6" [ngClass]="getStatusClass(chamado.status)">
             {{ chamado.status | titlecase }}
           </span>

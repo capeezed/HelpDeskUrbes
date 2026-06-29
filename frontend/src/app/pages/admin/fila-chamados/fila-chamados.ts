@@ -28,6 +28,7 @@ export class FilaChamados implements OnInit, OnDestroy {
   totalPages = 1;
 
   // ===== FILTRO =====
+  busca = '';
   private filtroSubject = new BehaviorSubject<string>('aberto');
   filtroAtual$ = this.filtroSubject.asObservable();
 
@@ -55,7 +56,7 @@ export class FilaChamados implements OnInit, OnDestroy {
         console.log(`Buscando chamados | status: [${filtro}] | página: ${this.page}`);
       }),
       switchMap(status =>
-        this.chamadoService.getMeusChamados(status, this.page, this.limit)
+        this.chamadoService.getMeusChamados(status, this.page, this.limit, this.busca)
       ),
       tap(res => {
         this.totalPages = res.totalPages;
@@ -80,6 +81,16 @@ export class FilaChamados implements OnInit, OnDestroy {
   mudarFiltro(novoStatus: string): void {
     this.page = 1; // sempre volta pra primeira página ao trocar filtro
     this.filtroSubject.next(novoStatus);
+  }
+
+  buscarChamados(): void {
+    this.page = 1;
+    this.filtroSubject.next(this.busca.trim() ? '' : this.filtroSubject.value);
+  }
+
+  limparBusca(): void {
+    this.busca = '';
+    this.buscarChamados();
   }
 
   paginaAnterior(): void {

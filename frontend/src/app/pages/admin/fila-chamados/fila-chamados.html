@@ -17,6 +17,21 @@
     </div>
 
     <div class="filter-panel mb-3">
+      <div class="input-group mb-3">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Buscar por ticket, titulo ou solicitante..."
+          [(ngModel)]="busca"
+          (keyup.enter)="buscarChamados()">
+        <button class="btn btn-outline-primary" type="button" (click)="buscarChamados()">
+          Buscar
+        </button>
+        <button class="btn btn-outline-secondary" type="button" (click)="limparBusca()" [disabled]="!busca">
+          Limpar
+        </button>
+      </div>
+
       <div class="btn-group" role="group" aria-label="Filtro de Status">
         <button
           type="button"
@@ -75,6 +90,7 @@
           <table class="table table-hover align-middle mb-0">
             <thead>
               <tr>
+                <th>Ticket</th>
                 <th>Status</th>
                 <th>Título</th>
                 <th>Solicitante</th>
@@ -87,6 +103,12 @@
 
             <tbody>
               <tr *ngFor="let chamado of chamados; trackBy: trackById">
+                <td>
+                  <span class="badge bg-light text-dark border" *ngIf="chamado.ticket_codigo">
+                    #{{ chamado.ticket_codigo }}
+                  </span>
+                </td>
+
                 <td>
                   <span class="badge rounded-pill"
                         [ngClass]="getStatusClass(chamado.status)">

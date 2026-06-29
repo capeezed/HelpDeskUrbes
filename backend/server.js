@@ -423,6 +423,14 @@ async function inserirAnexosChamado(conn, req, chamadoId, arquivos) {
   return valores[0][1];
 }
 
+function gerarTicketCodigo(chamadoId) {
+  return `TI${String(chamadoId).padStart(6, '0')}`;
+}
+
+function normalizarBuscaChamado(valor) {
+  return String(valor || '').trim().replace(/^#/, '').toUpperCase();
+}
+
 const ANOTACAO_ENCRYPTION_PREFIX = 'enc:v1:';
 let anotacoesSecretKey;
 
@@ -638,7 +646,9 @@ async function inserirArquivosAnotacao(conn, anotacaoId, usuarioId, files) {
  */
 app.get('/api/chamados', autenticarToken, async (req, res) => {
   const usuario = req.usuario;
-  const { status } = req.query;
+  const { status, busca } = req.query;
+  const buscaTexto = String(busca || '').trim();
+  const buscaNormalizada = normalizarBuscaChamado(buscaTexto);
 
   const page = Number(req.query.page || 1);
   const limit = Number(req.query.limit || 20);
@@ -665,6 +675,15 @@ app.get('/api/chamados', autenticarToken, async (req, res) => {
     if (status) {
       conditions.push('c.status = ?');
       params.push(status);
+    }
+
+    if (buscaNormalizada) {
+      conditions.push(`(
+        UPPER(REPLACE(c.ticket_codigo, '#', '')) LIKE ?
+        OR c.titulo LIKE ?
+        OR COALESCE(p.nome_completo, c.solicitante_nome_manual) LIKE ?
+      )`);
+      params.push(`%${buscaNormalizada}%`, `%${buscaTexto}%`, `%${buscaTexto}%`);
     }
 
     if (conditions.length) {
@@ -814,6 +833,9 @@ app.post('/api/chamado', autenticarToken, uploadChamadoAnexos, async (req, res) 
       [titulo, descricao, tipo, categoria, prioridade, criado_por_id, null]
     );
 
+    const ticketCodigo = gerarTicketCodigo(result.insertId);
+    await conn.query('UPDATE chamados SET ticket_codigo = ? WHERE id = ?', [ticketCodigo, result.insertId]);
+
     const anexoUrlPrincipal = await inserirAnexosChamado(conn, req, result.insertId, arquivos);
 
     if (anexoUrlPrincipal) {
@@ -833,6 +855,7 @@ app.post('/api/chamado', autenticarToken, uploadChamadoAnexos, async (req, res) 
       categoria: novoChamado.categoria,
       criado_por_id,
       criado_em: novoChamado.criado_em,
+      ticket_codigo: novoChamado.ticket_codigo,
       status: novoChamado.status
     });
 
@@ -907,9 +930,8 @@ app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, uploadCha
       criadoPorId = Number(solicitanteId);
     }
 
-    
-
     const prioridade = classificarPrioridadeChamado({ titulo, descricao, tipo, categoria });
+    const arquivos = getUploadedImages(req);
 
     conn = await pool.getConnection();
     await conn.beginTransaction();
@@ -950,6 +972,9 @@ app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, uploadCha
       ]
     );
 
+    const ticketCodigo = gerarTicketCodigo(result.insertId);
+    await conn.query('UPDATE chamados SET ticket_codigo = ? WHERE id = ?', [ticketCodigo, result.insertId]);
+
     const anexoUrlPrincipal = await inserirAnexosChamado(conn, req, result.insertId, arquivos);
 
     if (anexoUrlPrincipal) {
@@ -964,6 +989,7 @@ app.post('/api/chamados/por-usuario', autenticarToken, apenasTecnicos, uploadCha
     if (criadoPorId) {
       enviarParaUsuario(criadoPorId, 'chamado-atribuido', {
         chamadoId: novoChamado.id,
+        ticket_codigo: novoChamado.ticket_codigo,
         tipo: 'registrado_por_tecnico',
         mensagem: `Seu chamado foi registrado pelo técnico ${req.usuario.nome_completo || 'Técnico'}`,
         tecnicoNome: req.usuario.nome_completo

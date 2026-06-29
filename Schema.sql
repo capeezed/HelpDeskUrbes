@@ -141,6 +141,7 @@ DROP TABLE IF EXISTS `chamados`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `chamados` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `ticket_codigo` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `titulo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `descricao` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('aberto','pendente','em_andamento','resolvido','fechado') COLLATE utf8mb4_unicode_ci DEFAULT 'aberto',
@@ -158,6 +159,7 @@ CREATE TABLE `chamados` (
   `tipo` enum('incidente','solicitacao') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'incidente',
   `categoria` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_chamados_ticket_codigo` (`ticket_codigo`),
   KEY `criado_por_id` (`criado_por_id`),
   KEY `atribuido_para_id` (`atribuido_para_id`),
   KEY `idx_chamados_registrado_por_id` (`registrado_por_id`),

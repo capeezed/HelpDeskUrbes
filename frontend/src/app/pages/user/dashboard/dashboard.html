@@ -23,6 +23,9 @@
       <div *ngIf="chamados.length > 0" class="ticket-list">
         <div *ngFor="let chamado of chamados" class="ticket-card">
           <div class="ticket-main">
+            <span class="badge bg-light text-dark border mb-2" *ngIf="chamado.ticket_codigo">
+              #{{ chamado.ticket_codigo }}
+            </span>
             <h2>{{ chamado.titulo }}</h2>
             <div class="ticket-meta">
               <span><i class="bi bi-flag"></i> Prioridade: {{ chamado.prioridade | titlecase }}</span>

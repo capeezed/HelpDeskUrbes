@@ -7,6 +7,9 @@
   <div class="page-header">
     <div>
       <p class="page-kicker">Detalhes do chamado</p>
+      <span class="badge bg-light text-dark border mb-2" *ngIf="chamado.ticket_codigo">
+        #{{ chamado.ticket_codigo }}
+      </span>
       <h1 class="page-title">{{ chamado.titulo }}</h1>
       <p class="page-subtitle">Acompanhe histórico, anexos, SLA e mensagens do atendimento.</p>
     </div>
